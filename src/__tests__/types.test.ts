@@ -117,7 +117,7 @@ describe("EventRef and ConsentEvent exported from types", () => {
 });
 
 describe("configured app defineEvent types", () => {
-	it("constrains templates, dispatch channels, and safeFields to configured app types", () => {
+	it("constrains templates, dispatch channels, and persistedFields to configured app types", () => {
 		const app = configureHerald({
 			channels: {
 				email: {
@@ -129,8 +129,12 @@ describe("configured app defineEvent types", () => {
 		});
 
 		const event = app.defineEvent("typed.order", {
-			schema: z.object({ userId: z.string(), orderId: z.string() }),
-			safeFields: ["orderId"],
+			schema: z.object({
+				userId: z.string(),
+				orderId: z.string(),
+				order: z.object({ id: z.string() }),
+			}),
+			persistedFields: ["orderId", "order.id"],
 			compliance: {
 				purpose: "transactional.order_update",
 				legalBasis: "contract",
@@ -164,13 +168,21 @@ describe("configured app defineEvent types", () => {
 		expectTypeOf(herald.events.typedOrder).toBeFunction();
 		expectTypeOf(herald.events.typedOrder).parameters.toEqualTypeOf<
 			[
-				payload: { userId: string; orderId: string },
+				payload: {
+					userId: string;
+					orderId: string;
+					order: { id: string };
+				},
 				options?: SendOptions | undefined,
 			]
 		>();
 		if (false) {
 			// @ts-expect-error configured runtimes expose generated methods, not arbitrary string-send
-			herald.send("typed.order", { userId: "u1", orderId: "o1" });
+			herald.send("typed.order", {
+				userId: "u1",
+				orderId: "o1",
+				order: { id: "o1" },
+			});
 			// @ts-expect-error unknown generated method keys are rejected
 			herald.events.unknownEvent;
 		}
@@ -249,9 +261,12 @@ describe("configured app defineEvent types", () => {
 		const app = configureHerald({ channels: { inApp: true } });
 
 		app.defineEvent("typed.in-app", {
-			schema: z.object({ userId: z.string(), orderId: z.string() }),
-			// @ts-expect-error safeFields must be payload keys
-			safeFields: ["missing"],
+			schema: z.object({
+				userId: z.string(),
+				order: z.object({ id: z.string() }),
+			}),
+			// @ts-expect-error persistedFields must be precise payload paths
+			persistedFields: ["order.missing"],
 			compliance: {
 				purpose: "transactional.order_update",
 				legalBasis: "contract",
@@ -272,6 +287,45 @@ describe("configured app defineEvent types", () => {
 				},
 			],
 		});
+	});
+
+	it("allows precise paths through optional nested payload objects", () => {
+		const app = configureHerald({ channels: { inApp: true } });
+
+		app.defineEvent("typed.optional-nested", {
+			schema: z.object({
+				userId: z.string(),
+				order: z.object({ id: z.string() }).optional(),
+			}),
+			persistedFields: ["order.id"],
+			compliance: {
+				purpose: "transactional.order_update",
+				legalBasis: "contract",
+			},
+			templates: { item: { inApp: () => ({ title: "Order" }) } },
+			dispatch: (payload) => [
+				{ to: payload.userId, channels: ["inApp"], template: "item" },
+			],
+		});
+
+		if (false) {
+			app.defineEvent("typed.optional-object", {
+				schema: z.object({
+					userId: z.string(),
+					order: z.object({ id: z.string() }).optional(),
+				}),
+				// @ts-expect-error object parents are not persisted; use precise leaf paths
+				persistedFields: ["order"],
+				compliance: {
+					purpose: "transactional.order_update",
+					legalBasis: "contract",
+				},
+				templates: { item: { inApp: () => ({ title: "Order" }) } },
+				dispatch: (payload) => [
+					{ to: payload.userId, channels: ["inApp"], template: "item" },
+				],
+			});
+		}
 	});
 });
 
@@ -453,7 +507,7 @@ describe("compliance/channel public API examples", () => {
 
 	const newsletter = defineEvent("newsletter.types", {
 		schema: newsletterSchema,
-		safeFields: ["campaignId"],
+		persistedFields: ["campaignId"],
 		compliance: {
 			purpose: "marketing.newsletter",
 			legalBasis: "consent",
@@ -531,13 +585,13 @@ describe("compliance/channel public API examples", () => {
 	});
 });
 
-// ─── T18: Runtime safeFields default test ─────────────────────
-// defineEvent with no safeFields defaults to [] via defineEvent factory.
+// ─── T18: Runtime persistedFields default test ─────────────────────
+// defineEvent with no persistedFields defaults to [] via defineEvent factory.
 // The PII-never-persists invariant holds: no payload data appears in the delivery row.
 
-describe("T18 — safeFields default: no safeFields means nothing persisted", () => {
-	it("defineEvent with no safeFields: safeFields defaults to [] on the definition", () => {
-		// When no safeFields provided, defineEvent applies [] as the default
+describe("T18 — persistedFields default: no persistedFields means nothing persisted", () => {
+	it("defineEvent with no persistedFields: persistedFields defaults to [] on the definition", () => {
+		// When no persistedFields provided, defineEvent applies [] as the default
 		const ev = defineEvent("t18.no-safe-fields", {
 			schema: z.object({ userId: z.string(), secret: z.string() }),
 			templates: {
@@ -548,14 +602,14 @@ describe("T18 — safeFields default: no safeFields means nothing persisted", ()
 			dispatch: (p) => [
 				{ to: p.userId, channels: ["email"], template: "t18-tpl" },
 			],
-			// NO safeFields specified
+			// NO persistedFields specified
 		});
 
-		// safeFields defaults to [] — not undefined — so sanitizePayload returns null (nothing stored)
-		expect(ev.definition.safeFields).toEqual([]);
+		// persistedFields defaults to [] — not undefined — so sanitizePayload returns null (nothing stored)
+		expect(ev.definition.persistedFields).toEqual([]);
 	});
 
-	it("send() with no safeFields: no PII payload data appears in the stored delivery row", async () => {
+	it("send() with no persistedFields: no PII payload data appears in the stored delivery row", async () => {
 		const ev = defineEvent("t18.no-safe-pii", {
 			schema: z.object({ userId: z.string(), creditCard: z.string() }),
 			templates: {
@@ -566,7 +620,7 @@ describe("T18 — safeFields default: no safeFields means nothing persisted", ()
 			dispatch: (p) => [
 				{ to: p.userId, channels: ["email"], template: "t18-pii-tpl" },
 			],
-			// NO safeFields — nothing should be stored from the payload
+			// NO persistedFields — nothing should be stored from the payload
 		});
 
 		const db = createMockDb();
@@ -589,7 +643,7 @@ describe("T18 — safeFields default: no safeFields means nothing persisted", ()
 
 		// Delivery row is created (accepted successfully)
 		expect(db._deliveries.size).toBe(1);
-		// No PII in stored delivery data — safeFields=[] means nothing from payload persisted
+		// No PII in stored delivery data — persistedFields=[] means nothing from payload persisted
 		const stored = JSON.stringify([...db._deliveries.values()]);
 		expect(stored).not.toContain("4242424242424242");
 		expect(stored).not.toContain("creditCard");

@@ -44,7 +44,7 @@ export function makeOrderSetup(
 	const tplName = opts.tplName ?? "order-user";
 	const ev = defineEvent(eventName, {
 		schema: z.object({ orderId: z.string(), userId: z.string() }),
-		safeFields: ["orderId"],
+		persistedFields: ["orderId"],
 		compliance:
 			opts.legalBasis === "consent"
 				? { purpose: `${eventName}.marketing`, legalBasis: "consent" }

@@ -100,7 +100,7 @@ describe("configureHerald", () => {
 		});
 		const orderCompleted = app.defineEvent("order.completed.internal", {
 			schema: z.object({ userId: z.string(), orderId: z.string() }),
-			safeFields: ["orderId"],
+			persistedFields: ["orderId"],
 			compliance: { purpose: "transactional.order", legalBasis: "contract" },
 			templates: {
 				customer: {

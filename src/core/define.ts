@@ -43,12 +43,12 @@ export function defineEvent<
 	definition: EventDefinition<TSchema, InferSchema<TSchema>, TTemplates>,
 ): EventRef<TName, TSchema, TTemplates> {
 	// Pure factory — no global write. Duplicate stable-name detection happens when a runtime instance is created.
-	// Apply safeFields default so downstream code receives a concrete array.
+	// Apply persistedFields default so downstream code receives a concrete array.
 	return {
 		name,
 		definition: {
 			...definition,
-			safeFields: definition.safeFields ?? [],
+			persistedFields: definition.persistedFields ?? [],
 		},
 	};
 }

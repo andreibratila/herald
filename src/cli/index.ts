@@ -21,7 +21,7 @@ model HeraldNotification {
   title        String
   body         String?
   href         String?
-  data         Json?     // safeFields only — no PII persisted
+  data         Json?     // derived from persistedFields payload paths
   readAt       DateTime? @map("read_at")
   createdAt    DateTime  @default(now()) @map("created_at")
 
@@ -152,7 +152,7 @@ export const heraldNotifications = pgTable(
     title:        text("title").notNull(),
     body:         text("body"),
     href:         text("href"),
-    data:         json("data"),           // safeFields only — no PII
+    data:         json("data"),           // derived from persistedFields payload paths
     readAt:       timestamp("read_at"),
     createdAt:    timestamp("created_at").notNull().defaultNow(),
   },

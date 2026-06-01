@@ -16,7 +16,7 @@ export interface RuntimeTemplateDef {
 
 export interface RuntimeEventDef {
 	schema: HeraldSchema<unknown>;
-	safeFields?: string[];
+	persistedFields?: string[];
 	compliance?: EventCompliancePolicy;
 	templates: Record<string, RuntimeTemplateDef>;
 	dispatch(payload: Record<string, unknown>): Recipient[];

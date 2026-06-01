@@ -25,7 +25,7 @@ describe("README configured API fixture", () => {
 				amount: z.number(),
 				userId: z.string(),
 			}),
-			safeFields: ["orderId", "amount"],
+			persistedFields: ["orderId", "amount"],
 			compliance: {
 				purpose: "transactional.order_update",
 				legalBasis: "contract",

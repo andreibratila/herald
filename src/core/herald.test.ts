@@ -177,7 +177,7 @@ describe("compliance consent gating", () => {
 	it("evidence-required events require an app-owned evidence reference", async () => {
 		const ev = defineEvent("mkt.legitimate_interest", {
 			schema: z.object({ userId: z.string() }),
-			safeFields: [],
+			persistedFields: [],
 			compliance: {
 				purpose: "marketing.reactivation",
 				legalBasis: "legitimate_interest",

@@ -7,15 +7,49 @@ import type {
 } from "../types.js";
 import type { DeliveryChannelPlan } from "./templates.js";
 
-// Only safeFields are persisted — everything else stays in memory.
-function sanitizePayload(
+// Only persistedFields are persisted — everything else stays in memory.
+// Paths are selected from the validated payload, never from template-produced data.
+function pickPersistedPayloadFields(
 	payload: Record<string, unknown>,
-	safeFields?: string[],
+	persistedFields?: string[],
 ): Record<string, unknown> | null {
-	if (!safeFields || safeFields.length === 0) return null;
-	return Object.fromEntries(
-		safeFields.filter((f) => f in payload).map((f) => [f, payload[f]]),
-	);
+	if (!persistedFields || persistedFields.length === 0) return null;
+
+	const picked: Record<string, unknown> = {};
+	for (const path of persistedFields) {
+		const segments = path.split(".");
+		let source: unknown = payload;
+		for (const segment of segments) {
+			if (
+				source === null ||
+				typeof source !== "object" ||
+				Array.isArray(source) ||
+				!(segment in source)
+			) {
+				source = undefined;
+				break;
+			}
+			source = (source as Record<string, unknown>)[segment];
+		}
+
+		if (source === undefined) continue;
+
+		let target = picked;
+		for (const [index, segment] of segments.entries()) {
+			if (index === segments.length - 1) {
+				target[segment] = source;
+				break;
+			}
+
+			const next = target[segment];
+			if (next === null || typeof next !== "object" || Array.isArray(next)) {
+				target[segment] = {};
+			}
+			target = target[segment] as Record<string, unknown>;
+		}
+	}
+
+	return Object.keys(picked).length > 0 ? picked : null;
 }
 
 export type DeliverySideEffectsResult =
@@ -94,9 +128,7 @@ export async function runDeliverySideEffects({
 				title: rendered.title,
 				body: rendered.body ?? null,
 				href: rendered.href ?? null,
-				data: rendered.data
-					? sanitizePayload(rendered.data, eventDef?.safeFields)
-					: null,
+				data: pickPersistedPayloadFields(payload, eventDef?.persistedFields),
 				readAt: null,
 			});
 		}

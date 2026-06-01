@@ -103,7 +103,7 @@ export const orderCompleted = defineEvent("order.completed", {
     userId: z.string(),
     adminIds: z.array(z.string()),
   }),
-  safeFields: ["orderId", "amount"], // only these are persisted, no payload PII
+  persistedFields: ["orderId", "amount"], // precise payload paths Herald may persist
 
   compliance: {
     purpose: "transactional.order_update",
@@ -146,6 +146,8 @@ export const orderCompleted = defineEvent("order.completed", {
 });
 ```
 
+`persistedFields` is private by default: Herald derives durable notification `data` from those validated payload paths only. Templates render content (`title`, `body`, `href`, email subject/body), but they do not choose arbitrary structured data to persist.
+
 Marketing or commercial messages use consent evidence and suppressions:
 
 ```ts
@@ -157,7 +159,7 @@ export const newsletterWeekly = defineEvent("newsletter.weekly", {
     html: z.string(),
     addressHash: z.string(),
   }),
-  safeFields: ["campaignId"],
+  persistedFields: ["campaignId"], // precise payload paths Herald may persist
 
   compliance: {
     purpose: "marketing.newsletter",

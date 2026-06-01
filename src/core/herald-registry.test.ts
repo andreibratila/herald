@@ -56,11 +56,11 @@ describe("defineEvent — pure factory", () => {
 		};
 		const ref = defineEvent("pure.test.2a", def);
 		expect(ref.name).toBe("pure.test.2a");
-		// defineEvent spreads and adds safeFields default — not same reference
+		// defineEvent spreads and adds persistedFields default — not same reference
 		expect(ref.definition).toMatchObject({
 			schema: def.schema,
 			dispatch: def.dispatch,
-			safeFields: [],
+			persistedFields: [],
 		});
 	});
 

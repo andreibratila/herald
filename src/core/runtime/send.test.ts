@@ -71,13 +71,13 @@ describe("send() — payload validation", () => {
 // ─── PII-never-persists invariant ────────────────────────────
 
 describe("PII-never-persists invariant", () => {
-	it("delivery record does not contain PII fields outside safeFields", async () => {
+	it("delivery record does not contain PII fields outside persistedFields", async () => {
 		const db = createMockDb();
 		const mail = createMockMailAdapter();
 
 		const ev = defineEvent("order.pii", {
 			schema: { parse: (x: any) => x },
-			safeFields: ["orderId", "amount"],
+			persistedFields: ["orderId", "amount"],
 			templates: {
 				"pii-tpl": {
 					email: (p: any) => ({
@@ -122,7 +122,7 @@ describe("PII-never-persists invariant", () => {
 
 		const ev = defineEvent("order.pii2", {
 			schema: { parse: (x: any) => x },
-			safeFields: ["orderId"],
+			persistedFields: ["orderId"],
 			templates: {
 				"pii2-tpl": {
 					email: (p: any) => ({

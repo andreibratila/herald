@@ -26,7 +26,7 @@ function makeSetup(
 
 	const orderEvent = defineEvent("order.test", {
 		schema: orderSchema,
-		safeFields: ["orderId"],
+		persistedFields: ["orderId"],
 		templates: {
 			"order-inapp": {
 				inApp: (p) => ({
@@ -385,7 +385,7 @@ describe("Atomic Claim", () => {
 
 		const ev = defineEvent("order.test", {
 			schema: orderSchema,
-			safeFields: ["orderId"],
+			persistedFields: ["orderId"],
 			templates: {
 				"order-inapp": {
 					inApp: (p) => ({ title: `Order ${p.orderId}` }),
@@ -702,7 +702,7 @@ describe("Atomic Claim", () => {
 
 		const ev = defineEvent("order.spy", {
 			schema: orderSchema,
-			safeFields: ["orderId"],
+			persistedFields: ["orderId"],
 			templates: {
 				"order-inapp": {
 					inApp: (p) => ({ title: `Order ${p.orderId}` }),
@@ -741,7 +741,7 @@ describe("Atomic Claim", () => {
 
 		const ev = defineEvent("order.jobid", {
 			schema: orderSchema,
-			safeFields: ["orderId"],
+			persistedFields: ["orderId"],
 			templates: {
 				"order-inapp": {
 					inApp: (p) => ({ title: `Order ${p.orderId}` }),

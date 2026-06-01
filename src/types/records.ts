@@ -31,7 +31,7 @@ export interface Notification {
 	title: string;
 	body?: string | null;
 	href?: string | null;
-	/** Non-PII data only — filtered via safeFields */
+	/** Durable data derived only from event persistedFields payload paths. */
 	data?: Record<string, unknown> | null;
 	readAt?: Date | null;
 	createdAt: Date;

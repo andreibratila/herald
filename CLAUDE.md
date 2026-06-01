@@ -49,7 +49,7 @@ All peer deps (`drizzle-orm`, `kysely`, `pg-boss`, mail SDKs) are external to th
 ```
 configureHerald({ channels, compliance })
          ↓  returns HeraldApp with an app-scoped defineEvent()
-heraldApp.defineEvent("name", { schema, safeFields, templates, dispatch, compliance })
+heraldApp.defineEvent("name", { schema, persistedFields, templates, dispatch, compliance })
          ↓  returns branded EventRef (pure factory, no global side effects)
 heraldApp.create({ events: { eventKey: ref }, db, queue, hooks })
          ↓  builds per-instance registries and generated event methods
@@ -72,7 +72,7 @@ processDelivery(job)
 
 **Configured API is the public path.** Root `herald` exports `configureHerald`; normal application code defines events through the configured app and sends through generated `herald.events.*` methods. Low-level runtime factories are implementation/test primitives and must not appear in user-facing guidance.
 
-**Payload PII does not persist by default.** Only fields listed in `safeFields` are stored in delivery snapshots and in-app `data`. The full payload travels through the queue job in memory (or pg-boss's own table, which auto-cleans). Current caveat: rendered in-app `title`, `body`, and `href` are persisted notification fields, so templates must treat them as durable user-visible content until the privacy model is hardened.
+**Payload PII does not persist by default.** Only precise payload paths listed in `persistedFields` are stored in durable notification `data`; templates cannot choose arbitrary structured data to persist. The full payload travels through the queue job in memory (or pg-boss's own table, which auto-cleans). Rendered in-app `title`, `body`, and `href` are persisted user-visible notification fields, so templates must treat them as durable content.
 
 **`dispatch()` must be pure and synchronous.** No async work inside. Resolve all DB data (admin IDs, user emails, etc.) before calling generated `herald.events.*` methods.
 

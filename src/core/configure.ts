@@ -24,6 +24,7 @@ import type {
 	HeraldSchema,
 	InAppTemplate,
 	InferSchema,
+	PayloadFieldPath,
 	SendOptions,
 	TemplateDefinition,
 } from "../types/index.js";
@@ -75,7 +76,7 @@ export interface ConfiguredEventDefinition<
 	TTemplates extends ConfiguredEventTemplates<InferSchema<TSchema>, TChannels>,
 > {
 	schema: TSchema;
-	safeFields?: readonly (keyof InferSchema<TSchema>)[];
+	persistedFields?: readonly PayloadFieldPath<InferSchema<TSchema>>[];
 	compliance: EventCompliancePolicy;
 	templates: TTemplates;
 	dispatch(

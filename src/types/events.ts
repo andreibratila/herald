@@ -3,6 +3,17 @@ import type { EventCompliancePolicy } from "./compliance.js";
 import type { Delivery } from "./records.js";
 import type { HeraldSchema, InferSchema } from "./schema.js";
 
+export type PayloadFieldPath<T> =
+	T extends Record<string, unknown>
+		? {
+				[K in keyof T & string]: NonNullable<T[K]> extends readonly unknown[]
+					? K
+					: NonNullable<T[K]> extends Record<string, unknown>
+						? `${K}.${PayloadFieldPath<NonNullable<T[K]>>}`
+						: K;
+			}[keyof T & string]
+		: never;
+
 // ─── Recipient ───────────────────────────────────────────────
 
 export interface Recipient {
@@ -28,11 +39,12 @@ export interface EventDefinition<
 > {
 	schema: TSchema;
 	/**
-	 * Fields from payload that are safe to persist in the DB.
+	 * Precise payload paths that Herald may persist in durable DB records.
 	 * Everything else is kept in memory only — never written to DB.
-	 * This is the PII-safe default. Example: ["orderId", "amount"]
+	 * This is the private-by-default persistence contract.
+	 * Example: ["order.id", "amount"]
 	 */
-	safeFields?: (keyof TPayload)[];
+	persistedFields?: PayloadFieldPath<TPayload>[];
 	/** Compliance policy for this event. Configured apps require this per event. */
 	compliance?: EventCompliancePolicy;
 	/**
@@ -73,8 +85,11 @@ export interface EmailTemplate {
 export interface InAppTemplate {
 	title: string;
 	body?: string;
-	/** Non-PII data attached to the notification (respects safeFields) */
-	data?: Record<string, unknown>;
+	/**
+	 * Structured durable data is derived from event persistedFields.
+	 * Templates render content only; they do not choose persisted notification data.
+	 */
+	data?: never;
 	/** URL to navigate to when the notification is clicked */
 	href?: string;
 }
