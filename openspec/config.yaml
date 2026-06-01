@@ -1,0 +1,9 @@
+project: herald
+status: pre-release
+language: en
+artifact_policy: repo
+quality_bar: production-quality TypeScript library
+notes:
+  - Herald is not deployed and has no external compatibility constraints.
+  - Prefer correct long-term API design over preserving draft APIs.
+  - Compliance work must separate legal basis from channel preferences.

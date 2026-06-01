@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "__PRISMA_CLIENT_OUTPUT__"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "__DATABASE_URL__"
+}
+
+model HeraldNotification {
+  id           String    @id
+  userId       String    @map("user_id")
+  eventType    String    @map("event_type")
+  templateName String    @map("template_name")
+  deliveryId   String?   @map("delivery_id")
+  title        String
+  body         String?
+  href         String?
+  data         Json?
+  readAt       DateTime? @db.Timestamptz(6) @map("read_at")
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  @@map("herald_notifications")
+}
+
+model HeraldDelivery {
+  id                                 String    @id
+  userId                             String    @map("user_id")
+  eventType                          String    @map("event_type")
+  templateName                       String    @map("template_name")
+  channel                            String
+  status                             String
+  attempts                           Int
+  lastError                          String?   @map("last_error")
+  externalId                         String?   @map("external_id")
+  idempotencyKey                     String?   @map("idempotency_key")
+  scheduledAt                        DateTime? @db.Timestamptz(6) @map("scheduled_at")
+  acceptedAt                         DateTime? @db.Timestamptz(6) @map("accepted_at")
+  failedAt                           DateTime? @db.Timestamptz(6) @map("failed_at")
+  claimedAt                          DateTime? @db.Timestamptz(6) @map("claimed_at")
+  claimExpiresAt                     DateTime? @db.Timestamptz(6) @map("claim_expires_at")
+  claimedBy                          String?   @map("claimed_by")
+  resolveAttempts                    Int       @map("resolve_attempts")
+  queueJobId                         String?   @map("queue_job_id")
+  bypassComplianceCheck              Boolean   @map("bypass_compliance_check")
+  sideEffectsCompletedAt             DateTime? @db.Timestamptz(6) @map("side_effects_completed_at")
+  renderedHash                       String?   @map("rendered_hash")
+  addressHash                        String?   @map("address_hash")
+  purpose                            String?
+  legalBasisAtSend                   String?   @map("legal_basis_at_send")
+  consentEventId                     String?   @map("consent_event_id")
+  suppressionId                      String?   @map("suppression_id")
+  complianceEvidenceId               String?   @map("compliance_evidence_id")
+  complianceRequired                 Boolean?  @map("compliance_required")
+  complianceRequiresConsentEvent     Boolean?  @map("compliance_requires_consent_event")
+  complianceRequiresSuppressionCheck Boolean?  @map("compliance_requires_suppression_check")
+  complianceRequiresEvidence         Boolean?  @map("compliance_requires_evidence")
+  complianceDefaultDecision          String?   @map("compliance_default_decision")
+  complianceDecision                 String?   @map("compliance_decision")
+  complianceCheckedAt                DateTime? @db.Timestamptz(6) @map("compliance_checked_at")
+  createdAt                          DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt                          DateTime  @default(now()) @db.Timestamptz(6) @map("updated_at")
+
+  @@map("herald_deliveries")
+}
+
+model HeraldConsentEvent {
+  id                   String    @id
+  subjectId            String    @map("subject_id")
+  subjectType          String?   @map("subject_type")
+  channel              String
+  purpose              String
+  status               String
+  legalBasis           String    @map("legal_basis")
+  source               String
+  formId               String?   @map("form_id")
+  legalNoticeVersionId String?   @map("legal_notice_version_id")
+  privacyPolicyVersion String?   @map("privacy_policy_version")
+  checkboxTextVersion  String?   @map("checkbox_text_version")
+  ipHash               String?   @map("ip_hash")
+  userAgentHash        String?   @map("user_agent_hash")
+  metadata             Json?
+  createdAt            DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  @@map("herald_consent_events")
+}
+
+model HeraldSuppression {
+  id          String   @id
+  addressHash String   @map("address_hash")
+  channel     String
+  purpose     String?
+  reason      String
+  source      String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  @@map("herald_suppressions")
+}
+
+model HeraldAuditLog {
+  id         String   @id
+  userId     String?  @map("user_id")
+  action     String
+  eventType  String?  @map("event_type")
+  deliveryId String?  @map("delivery_id")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  @@map("herald_audit_logs")
+}

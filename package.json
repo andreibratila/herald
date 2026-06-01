@@ -1,0 +1,137 @@
+{
+  "name": "herald",
+  "version": "0.1.0",
+  "description": "Embedded notification engine for TypeScript apps with legal-basis compliance primitives.",
+  "license": "MIT AND Commons-Clause",
+  "author": "Andrei Bratila <andrei@kodexed.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kodexed/herald"
+  },
+  "keywords": [
+    "notifications",
+    "email",
+    "in-app",
+    "typescript",
+    "compliance",
+    "legal-basis",
+    "consent",
+    "prisma",
+    "drizzle"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./adapters/prisma": {
+      "types": "./dist/adapters/db/prisma.d.ts",
+      "import": "./dist/adapters/db/prisma.js",
+      "require": "./dist/adapters/db/prisma.cjs"
+    },
+    "./adapters/drizzle": {
+      "types": "./dist/adapters/db/drizzle.d.ts",
+      "import": "./dist/adapters/db/drizzle.js",
+      "require": "./dist/adapters/db/drizzle.cjs"
+    },
+    "./adapters/kysely": {
+      "types": "./dist/adapters/db/kysely.d.ts",
+      "import": "./dist/adapters/db/kysely.js",
+      "require": "./dist/adapters/db/kysely.cjs"
+    },
+    "./adapters/resend": {
+      "types": "./dist/adapters/mail/resend.d.ts",
+      "import": "./dist/adapters/mail/resend.js",
+      "require": "./dist/adapters/mail/resend.cjs"
+    },
+    "./adapters/nodemailer": {
+      "types": "./dist/adapters/mail/nodemailer.d.ts",
+      "import": "./dist/adapters/mail/nodemailer.js",
+      "require": "./dist/adapters/mail/nodemailer.cjs"
+    },
+    "./adapters/sendgrid": {
+      "types": "./dist/adapters/mail/sendgrid.d.ts",
+      "import": "./dist/adapters/mail/sendgrid.js",
+      "require": "./dist/adapters/mail/sendgrid.cjs"
+    },
+    "./adapters/postmark": {
+      "types": "./dist/adapters/mail/postmark.d.ts",
+      "import": "./dist/adapters/mail/postmark.js",
+      "require": "./dist/adapters/mail/postmark.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "herald": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src ",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "@sendgrid/mail": "^8.0.0",
+    "drizzle-orm": ">=0.28.0",
+    "kysely": ">=0.26.0",
+    "nodemailer": "^8.0.0",
+    "pg-boss": "^12.0.0",
+    "resend": "^6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@sendgrid/mail": {
+      "optional": true
+    },
+    "drizzle-orm": {
+      "optional": true
+    },
+    "kysely": {
+      "optional": true
+    },
+    "nodemailer": {
+      "optional": true
+    },
+    "pg-boss": {
+      "optional": true
+    },
+    "resend": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@prisma/client": "^6.19.0",
+    "@sendgrid/mail": "^8.0.0",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.20.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vitest/coverage-v8": "^4.0.0",
+    "drizzle-orm": ">=0.28.0",
+    "eslint": "^9.0.0",
+    "kysely": ">=0.26.0",
+    "nodemailer": "^8.0.0",
+    "pg": "^8.21.0",
+    "pg-boss": "^12.0.0",
+    "prisma": "^6.19.0",
+    "resend": "^6.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^6.0.0",
+    "vitest": "^4.0.0",
+    "zod": "^3.0.0"
+  },
+  "dependencies": {
+    "type-fest": "^5.6.0"
+  }
+}

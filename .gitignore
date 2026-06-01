@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+src/__tests__/helpers/database-adapter-real-targets/prisma-generated-client/
+src/__tests__/helpers/database-adapter-real-targets/prisma-schema.generated.prisma
+# Local Pi runtime state
+.atl/
