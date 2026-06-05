@@ -7,18 +7,18 @@ import {
 	runNotificationConformance,
 	runScheduledLifecycleConformance,
 	runUserLookupConformance,
-} from "../../__tests__/helpers/database-adapter-conformance.js";
+} from "../../helpers/database-adapter-conformance.js";
 import {
 	getRealDbSkipReason,
 	parseRealDbConformanceEnv,
 	shouldRunRealDbAdapter,
-} from "../../__tests__/helpers/database-adapter-real-targets/env.js";
-import { createPrismaRealConformanceTarget } from "../../__tests__/helpers/database-adapter-real-targets/prisma-target.js";
+} from "../../helpers/database-adapter-real-targets/env.js";
+import { createDrizzleRealConformanceTarget } from "../../helpers/database-adapter-real-targets/drizzle-target.js";
 
 const env = parseRealDbConformanceEnv();
-const adapter = "prisma";
+const adapter = "drizzle";
 
-describe("Prisma adapter — real DB conformance (env-gated)", () => {
+describe("Drizzle adapter — real DB conformance (env-gated)", () => {
 	const shouldRun = shouldRunRealDbAdapter(adapter, env);
 	const skipReason = getRealDbSkipReason(adapter, env);
 
@@ -32,13 +32,13 @@ describe("Prisma adapter — real DB conformance (env-gated)", () => {
 	if (!env.url) {
 		it("fails fast when explicit real DB mode is enabled without URL", () => {
 			throw new Error(
-				"HERALD_DB_CONFORMANCE=1 for adapter=prisma requires HERALD_DB_CONFORMANCE_URL. Example: HERALD_DB_CONFORMANCE=1 HERALD_DB_CONFORMANCE_ADAPTERS=prisma HERALD_DB_CONFORMANCE_URL=postgres://... npx vitest run src/adapters/db/prisma.real-conformance.test.ts",
+				"HERALD_DB_CONFORMANCE=1 for adapter=drizzle requires HERALD_DB_CONFORMANCE_URL. Example: HERALD_DB_CONFORMANCE=1 HERALD_DB_CONFORMANCE_ADAPTERS=drizzle HERALD_DB_CONFORMANCE_URL=postgres://... npx vitest run src/__tests__/conformance/adapters-db/drizzle.real-conformance.test.ts",
 			);
 		});
 		return;
 	}
 
-	const target = createPrismaRealConformanceTarget({
+	const target = createDrizzleRealConformanceTarget({
 		url: env.url,
 		keepSchema: env.keepSchema,
 	});

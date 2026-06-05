@@ -7,18 +7,18 @@ import {
 	runNotificationConformance,
 	runScheduledLifecycleConformance,
 	runUserLookupConformance,
-} from "../../__tests__/helpers/database-adapter-conformance.js";
+} from "../../helpers/database-adapter-conformance.js";
 import {
 	getRealDbSkipReason,
 	parseRealDbConformanceEnv,
 	shouldRunRealDbAdapter,
-} from "../../__tests__/helpers/database-adapter-real-targets/env.js";
-import { createKyselyRealConformanceTarget } from "../../__tests__/helpers/database-adapter-real-targets/kysely-target.js";
+} from "../../helpers/database-adapter-real-targets/env.js";
+import { createPrismaRealConformanceTarget } from "../../helpers/database-adapter-real-targets/prisma-target.js";
 
 const env = parseRealDbConformanceEnv();
-const adapter = "kysely";
+const adapter = "prisma";
 
-describe("Kysely adapter — real DB conformance (env-gated)", () => {
+describe("Prisma adapter — real DB conformance (env-gated)", () => {
 	const shouldRun = shouldRunRealDbAdapter(adapter, env);
 	const skipReason = getRealDbSkipReason(adapter, env);
 
@@ -32,13 +32,13 @@ describe("Kysely adapter — real DB conformance (env-gated)", () => {
 	if (!env.url) {
 		it("fails fast when explicit real DB mode is enabled without URL", () => {
 			throw new Error(
-				"HERALD_DB_CONFORMANCE=1 for adapter=kysely requires HERALD_DB_CONFORMANCE_URL. Example: HERALD_DB_CONFORMANCE=1 HERALD_DB_CONFORMANCE_ADAPTERS=kysely HERALD_DB_CONFORMANCE_URL=postgres://... npx vitest run src/adapters/db/kysely.real-conformance.test.ts",
+				"HERALD_DB_CONFORMANCE=1 for adapter=prisma requires HERALD_DB_CONFORMANCE_URL. Example: HERALD_DB_CONFORMANCE=1 HERALD_DB_CONFORMANCE_ADAPTERS=prisma HERALD_DB_CONFORMANCE_URL=postgres://... npx vitest run src/__tests__/conformance/adapters-db/prisma.real-conformance.test.ts",
 			);
 		});
 		return;
 	}
 
-	const target = createKyselyRealConformanceTarget({
+	const target = createPrismaRealConformanceTarget({
 		url: env.url,
 		keepSchema: env.keepSchema,
 	});

@@ -4,7 +4,7 @@
 // ============================================================
 
 import { describe, it, expect } from "vitest";
-import { createKyselyAdapter } from "./kysely.js";
+import { createKyselyAdapter } from "../../../adapters/db/kysely.js";
 
 // ─── Mock Kysely DB builder ───────────────────────────────────
 // We build a chainable mock that captures the final `.set(...)` call

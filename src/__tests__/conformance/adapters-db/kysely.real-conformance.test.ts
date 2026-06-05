@@ -7,18 +7,18 @@ import {
 	runNotificationConformance,
 	runScheduledLifecycleConformance,
 	runUserLookupConformance,
-} from "../../__tests__/helpers/database-adapter-conformance.js";
+} from "../../helpers/database-adapter-conformance.js";
 import {
 	getRealDbSkipReason,
 	parseRealDbConformanceEnv,
 	shouldRunRealDbAdapter,
-} from "../../__tests__/helpers/database-adapter-real-targets/env.js";
-import { createDrizzleRealConformanceTarget } from "../../__tests__/helpers/database-adapter-real-targets/drizzle-target.js";
+} from "../../helpers/database-adapter-real-targets/env.js";
+import { createKyselyRealConformanceTarget } from "../../helpers/database-adapter-real-targets/kysely-target.js";
 
 const env = parseRealDbConformanceEnv();
-const adapter = "drizzle";
+const adapter = "kysely";
 
-describe("Drizzle adapter — real DB conformance (env-gated)", () => {
+describe("Kysely adapter — real DB conformance (env-gated)", () => {
 	const shouldRun = shouldRunRealDbAdapter(adapter, env);
 	const skipReason = getRealDbSkipReason(adapter, env);
 
@@ -32,13 +32,13 @@ describe("Drizzle adapter — real DB conformance (env-gated)", () => {
 	if (!env.url) {
 		it("fails fast when explicit real DB mode is enabled without URL", () => {
 			throw new Error(
-				"HERALD_DB_CONFORMANCE=1 for adapter=drizzle requires HERALD_DB_CONFORMANCE_URL. Example: HERALD_DB_CONFORMANCE=1 HERALD_DB_CONFORMANCE_ADAPTERS=drizzle HERALD_DB_CONFORMANCE_URL=postgres://... npx vitest run src/adapters/db/drizzle.real-conformance.test.ts",
+				"HERALD_DB_CONFORMANCE=1 for adapter=kysely requires HERALD_DB_CONFORMANCE_URL. Example: HERALD_DB_CONFORMANCE=1 HERALD_DB_CONFORMANCE_ADAPTERS=kysely HERALD_DB_CONFORMANCE_URL=postgres://... npx vitest run src/__tests__/conformance/adapters-db/kysely.real-conformance.test.ts",
 			);
 		});
 		return;
 	}
 
-	const target = createDrizzleRealConformanceTarget({
+	const target = createKyselyRealConformanceTarget({
 		url: env.url,
 		keepSchema: env.keepSchema,
 	});
