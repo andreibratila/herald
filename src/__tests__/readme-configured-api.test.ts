@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { configureHerald } from "../index.js";
-import { createMockDb } from "./helpers/mock-db-adapter.js";
-import { createMockMailAdapter } from "./helpers/mock-mail-adapter.js";
+import { createMockDb } from "./support/adapters/mock-db-adapter.js";
+import { createMockMailAdapter } from "./support/adapters/mock-mail-adapter.js";
 
 describe("README configured API fixture", () => {
 	it("uses configured app channels, app-scoped defineEvent, and generated methods", async () => {

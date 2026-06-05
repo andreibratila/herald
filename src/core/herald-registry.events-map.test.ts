@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import { defineEvent } from "./define.js";
 import { createHerald } from "./herald.js";
-import { createMockDb } from "../__tests__/helpers/mock-db-adapter.js";
+import { createMockDb } from "../__tests__/support/adapters/mock-db-adapter.js";
 import { makeBaseEvent, makeHeraldWithInstance } from "../__tests__/support/core/herald-registry.js";
 
 describe("createHerald with events map", () => {

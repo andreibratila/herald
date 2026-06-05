@@ -7,7 +7,7 @@ import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import { createHerald } from "../../core/herald.js";
 import { defineEvent } from "../../core/define.js";
-import { createMockDb } from "../helpers/mock-db-adapter.js";
+import { createMockDb } from "../support/adapters/mock-db-adapter.js";
 
 // ─── Shared helpers ──────────────────────────────────────────
 

@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { z } from "zod";
 import { createHerald } from "../../core/herald.js";
 import { defineEvent } from "../../core/define.js";
-import { createMockDb } from "../helpers/mock-db-adapter.js";
+import { createMockDb } from "../support/adapters/mock-db-adapter.js";
 import type { Delivery } from "../../types/index.js";
 
 const orderSchema = z.object({ orderId: z.string(), amount: z.number() });

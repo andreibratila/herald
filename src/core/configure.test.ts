@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { createMockDb } from "../__tests__/helpers/mock-db-adapter.js";
-import { createMockMailAdapter } from "../__tests__/helpers/mock-mail-adapter.js";
+import { createMockDb } from "../__tests__/support/adapters/mock-db-adapter.js";
+import { createMockMailAdapter } from "../__tests__/support/adapters/mock-mail-adapter.js";
 import { configureHerald, getEventAppId } from "./configure.js";
 
 describe("configureHerald", () => {

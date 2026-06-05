@@ -8,8 +8,8 @@ import { z } from "zod";
 import { configureHerald, legalBases } from "../index.js";
 import { defineEvent } from "../core/define.js";
 import { createHerald } from "../core/herald.js";
-import { createMockDb } from "./helpers/mock-db-adapter.js";
-import { createMockMailAdapter } from "./helpers/mock-mail-adapter.js";
+import { createMockDb } from "./support/adapters/mock-db-adapter.js";
+import { createMockMailAdapter } from "./support/adapters/mock-mail-adapter.js";
 import type {
 	DeliveryStatus,
 	SendOptions,

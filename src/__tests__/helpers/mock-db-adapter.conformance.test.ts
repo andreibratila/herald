@@ -8,7 +8,7 @@ import {
 	runUserLookupConformance,
 	type DatabaseAdapterConformanceTarget,
 } from "./database-adapter-conformance.js";
-import { createMockDb, type MockDb } from "./mock-db-adapter.js";
+import { createMockDb, type MockDb } from "../support/adapters/mock-db-adapter.js";
 
 const target: DatabaseAdapterConformanceTarget<MockDb> = {
 	name: "createMockDb",

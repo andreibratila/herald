@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { defineEvent, validateRecipients } from "./define.js";
 import { createHerald } from "./herald.js";
-import { createMockDb } from "../__tests__/helpers/mock-db-adapter.js";
+import { createMockDb } from "../__tests__/support/adapters/mock-db-adapter.js";
 import { z } from "zod";
 
 // ─── helpers ──────────────────────────────────────────────────

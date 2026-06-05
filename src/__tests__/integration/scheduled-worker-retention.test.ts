@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createMockDb } from "../helpers/mock-db-adapter.js";
+import { createMockDb } from "../support/adapters/mock-db-adapter.js";
 import type { Delivery } from "../../types/index.js";
 
 describe("Atomic Claim", () => {

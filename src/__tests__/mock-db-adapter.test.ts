@@ -4,7 +4,7 @@
 // ============================================================
 
 import { describe, it, expect, beforeEach } from "vitest"
-import { createMockDb } from "./helpers/mock-db-adapter.js"
+import { createMockDb } from "./support/adapters/mock-db-adapter.js"
 import type { Delivery } from "../types/index.js"
 
 // ─── Helpers ─────────────────────────────────────────────────

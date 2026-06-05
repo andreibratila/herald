@@ -6,7 +6,7 @@ import type {
 	ComplianceExportData,
 	ConsentEvent,
 	Suppression,
-} from "../../types/index.js";
+} from "../../../types/index.js";
 
 export interface MockDb extends HeraldDatabaseAdapter {
 	_notifications: Map<string, Notification>;

@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { z } from "zod";
 import { defineEvent } from "../define.js";
 import { createHerald } from "../herald.js";
-import { createMockDb } from "../../__tests__/helpers/mock-db-adapter.js";
-import { createMockMailAdapter } from "../../__tests__/helpers/mock-mail-adapter.js";
+import { createMockDb } from "../../__tests__/support/adapters/mock-db-adapter.js";
+import { createMockMailAdapter } from "../../__tests__/support/adapters/mock-mail-adapter.js";
 
 // ─── startScheduledWorker ─────────────────────────────────────
 

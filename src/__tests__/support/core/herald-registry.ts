@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { defineEvent } from "../../../core/define.js";
 import { createHerald } from "../../../core/herald.js";
-import { createMockDb } from "../../helpers/mock-db-adapter.js";
+import { createMockDb } from "../adapters/mock-db-adapter.js";
 import type { AnyEventRef } from "../../../types/index.js";
 
 export const DEFAULT_TMPL_NAME = "order-tmpl";

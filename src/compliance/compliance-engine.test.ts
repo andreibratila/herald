@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMockDb } from "../__tests__/helpers/mock-db-adapter.js";
+import { createMockDb } from "../__tests__/support/adapters/mock-db-adapter.js";
 import { evaluateCompliance, legalBases } from "./index.js";
 
 const baseInput = {
