@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
-import { defineEvent } from "../define.js";
-import { createHerald } from "../herald.js";
-import { createMockDb } from "../../__tests__/support/adapters/mock-db-adapter.js";
-import { createMockMailAdapter } from "../../__tests__/support/adapters/mock-mail-adapter.js";
-import { makeOrderSetup } from "../../__tests__/support/core/runtime.js";
+import { defineEvent } from "../../../core/define.js";
+import { createHerald } from "../../../core/herald.js";
+import { createMockDb } from "../../support/adapters/mock-db-adapter.js";
+import { createMockMailAdapter } from "../../support/adapters/mock-mail-adapter.js";
+import { makeOrderSetup } from "../../support/core/runtime.js";
 
 // ─── send() return type: { deliveries, errors, skipped } ──
 

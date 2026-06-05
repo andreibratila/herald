@@ -3,7 +3,7 @@ import {
 	mergeComplianceDefaults,
 	resolveProcessorRetryConfig,
 	resolveQueueConfig,
-} from "./config-defaults.js";
+} from "../../../core/runtime/config-defaults.js";
 
 describe("config defaults", () => {
 	it("defaults omitted queue config to the sync driver", () => {
