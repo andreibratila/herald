@@ -31,7 +31,8 @@ Implemented: inline Prisma, Drizzle, and Kysely schema strings were moved to foc
   - split the former `src/core/herald.test.ts` into behavior-focused files: `src/core/herald.compliance-consent.test.ts`, `src/core/herald.compliance-send.test.ts`, `src/core/herald.lifecycle.test.ts`, `src/core/herald.send-basics.test.ts`, and `src/core/herald.validation.test.ts`.
   - split the former `src/core/runtime/scheduled-worker.test.ts` into `src/core/runtime/scheduled-send.test.ts`, `src/core/runtime/scheduled-process-delivery.test.ts`, `src/core/runtime/scheduled-worker-lifecycle.test.ts`, and `src/core/runtime/scheduled-worker-failures.test.ts`.
   - split the former `src/__tests__/integration/scheduled-worker.test.ts` into `src/__tests__/integration/scheduled-worker-claim.test.ts`, `src/__tests__/integration/scheduled-worker-retention.test.ts`, `src/__tests__/integration/scheduled-worker-resolve-retry.test.ts`, and `src/__tests__/integration/scheduled-worker-fire-enqueue.test.ts`.
-- **Remaining likely files**: `src/core/runtime/processor.test.ts` and `src/core/herald-registry.test.ts`.
+  - split in-app notification persistence coverage from `src/core/runtime/processor.test.ts` into `src/core/runtime/processor-in-app.test.ts`.
+- **Remaining likely files**: `src/core/herald-registry.test.ts`.
 - **Risk**: Low if move-only.
 - **Validation**: targeted moved test set plus `npm run test`.
 - **SDD**: Not needed for mechanical split.
