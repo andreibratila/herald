@@ -22,16 +22,13 @@ Implemented: `safeFields` was renamed to `persistedFields`; durable in-app `noti
 
 ### P1 — Extract CLI schema strings from `src/cli/index.ts`
 
-- **Scope**: Move inline Prisma/Drizzle/Kysely schema strings to focused modules without changing generated output.
-- **Likely files**: `src/cli/index.ts`, new `src/cli/schemas/{prisma,drizzle,kysely}.ts`, CLI tests if needed.
-- **Risk**: Low-medium. Mostly move-only, but output should remain byte-for-byte compatible.
-- **Validation**: `npx vitest run src/cli/cli.test.ts`, `npm run build`, optional before/after `npx herald generate --adapter ...` output comparison.
-- **SDD**: Not needed if strictly extraction-only.
+Implemented: inline Prisma, Drizzle, and Kysely schema strings were moved to focused modules under `src/cli/schemas/` without changing generated output.
 
 ### P1 — Split oversized tests by behavior
 
 - **Scope**: Move-only split of large test files to reduce review burden without changing assertions.
-- **Likely files**: `src/__tests__/integration/scheduled-worker.test.ts`, `src/core/runtime/processor.test.ts`, `src/core/herald.test.ts`, `src/core/runtime/scheduled-worker.test.ts`.
+- **Completed first slice**: split the former `src/core/herald.test.ts` into behavior-focused files: `src/core/herald.compliance-consent.test.ts`, `src/core/herald.compliance-send.test.ts`, `src/core/herald.lifecycle.test.ts`, `src/core/herald.send-basics.test.ts`, and `src/core/herald.validation.test.ts`.
+- **Remaining likely files**: `src/__tests__/integration/scheduled-worker.test.ts`, `src/core/runtime/processor.test.ts`, `src/core/runtime/scheduled-worker.test.ts`, and `src/core/herald-registry.test.ts`.
 - **Risk**: Low if move-only.
 - **Validation**: targeted moved test set plus `npm run test`.
 - **SDD**: Not needed for mechanical split.
@@ -54,9 +51,9 @@ Implemented: `safeFields` was renamed to `persistedFields`; durable in-app `noti
 
 ## Recommended Immediate Slice
 
-Start with **P1 — Extract CLI schema strings from `src/cli/index.ts`**.
+Continue with **P1 — Split oversized tests by behavior**.
 
-Reason: it is low-risk, mostly move-only, and prepares for a later schema metadata slice.
+Reason: the CLI schema extraction is complete; the remaining low-risk work is reducing large test files before taking on schema metadata or adapter cleanup.
 
 ## Audit Doc Disposition
 
