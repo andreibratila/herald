@@ -104,6 +104,24 @@ Herald currently does **not** export `herald/react` or a built-in `createSSEHand
 
 All authoritative source lives in `src/`. Root-level TypeScript files are config files only (`tsup.config.ts`, `vitest.config.ts`); there are no active root-level draft API copies.
 
+### Test layout
+
+All test files live under `src/__tests__/`; production folders should not contain `*.test.ts` files.
+
+Use this structure:
+
+```text
+src/__tests__/unit/<domain>/       # unit/behavior tests for one source domain
+src/__tests__/integration/         # cross-module runtime flows
+src/__tests__/conformance/         # contract/conformance suites, especially env-gated adapter tests
+src/__tests__/support/             # reusable generic test infrastructure
+src/__tests__/helpers/             # specialized conformance/real-target helper modules
+```
+
+Current unit domains include `core`, `core-runtime`, `compliance`, `queue`, `cli`, and `adapters-db`.
+
+Generic reusable mocks belong in `src/__tests__/support/` (for example mock DB/mail adapters). Keep database adapter conformance runners and real DB target helpers under `src/__tests__/helpers/` for now: they are specialized testbed infrastructure shared by conformance tests, not generic support. If they are moved later, do it as a dedicated conformance-architecture slice.
+
 ### CLI (`npx herald generate`)
 
 Outputs DB schema snippets to stdout. Supports `--adapter prisma|drizzle|kysely`. No side effects — safe to pipe or redirect.

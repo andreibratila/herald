@@ -8,9 +8,11 @@ The previous broad audit docs are partly stale. The codebase already has:
 - domain-split type modules with `src/types/index.ts` as a compatibility barrel;
 - split send and processor runtime phases;
 - scheduled-worker error-domain regression coverage;
+- centralized test files under `src/__tests__/unit`, `src/__tests__/integration`, and `src/__tests__/conformance` with no `*.test.ts` files left in production folders;
+- generic reusable test adapters under `src/__tests__/support/adapters`;
 - DB adapter conformance helpers plus env-gated real adapter tests.
 
-Remaining work is mostly schema organization and review-load reduction.
+Remaining work is mostly schema organization and adapter internals cleanup.
 
 ## Completed
 
@@ -24,19 +26,25 @@ Implemented: `safeFields` was renamed to `persistedFields`; durable in-app `noti
 
 Implemented: inline Prisma, Drizzle, and Kysely schema strings were moved to focused modules under `src/cli/schemas/` without changing generated output.
 
-### P1 — Split oversized tests by behavior
+### P1 — Split oversized tests and centralize test layout
 
-- **Scope**: Move-only split of large test files to reduce review burden without changing assertions.
-- **Completed slices**:
-  - split the former `src/core/herald.test.ts` into behavior-focused files: `src/core/herald.compliance-consent.test.ts`, `src/core/herald.compliance-send.test.ts`, `src/core/herald.lifecycle.test.ts`, `src/core/herald.send-basics.test.ts`, and `src/core/herald.validation.test.ts`.
-  - split the former `src/core/runtime/scheduled-worker.test.ts` into `src/core/runtime/scheduled-send.test.ts`, `src/core/runtime/scheduled-process-delivery.test.ts`, `src/core/runtime/scheduled-worker-lifecycle.test.ts`, and `src/core/runtime/scheduled-worker-failures.test.ts`.
-  - split the former `src/__tests__/integration/scheduled-worker.test.ts` into `src/__tests__/integration/scheduled-worker-claim.test.ts`, `src/__tests__/integration/scheduled-worker-retention.test.ts`, `src/__tests__/integration/scheduled-worker-resolve-retry.test.ts`, and `src/__tests__/integration/scheduled-worker-fire-enqueue.test.ts`.
-  - split in-app notification persistence coverage from `src/core/runtime/processor.test.ts` into `src/core/runtime/processor-in-app.test.ts`.
-  - split the former `src/core/herald-registry.test.ts` into behavior-focused registry/configured-event test files.
-- **Remaining likely files**: none from the original oversized-test backlog.
-- **Risk**: Low if move-only.
-- **Validation**: targeted moved test set plus `npm run test`.
-- **SDD**: Not needed for mechanical split.
+Implemented.
+
+- **Oversized split slices**:
+  - split the former `src/core/herald.test.ts` into behavior-focused core tests.
+  - split the former `src/core/runtime/scheduled-worker.test.ts` into scheduled-send/process-delivery/lifecycle/failure tests.
+  - split the former `src/__tests__/integration/scheduled-worker.test.ts` into behavior-focused integration tests.
+  - split in-app notification persistence coverage from `src/core/runtime/processor.test.ts` into `processor-in-app.test.ts`.
+  - split the former `src/core/herald-registry.test.ts` into behavior-focused registry/configured-event tests.
+- **Folder cleanup slices**:
+  - moved reusable mock DB/mail adapters to `src/__tests__/support/adapters/`.
+  - moved root core tests to `src/__tests__/unit/core/`.
+  - moved runtime tests to `src/__tests__/unit/core-runtime/`.
+  - moved compliance, queue, and CLI tests to `src/__tests__/unit/{compliance,queue,cli}/`.
+  - moved DB adapter tests to `src/__tests__/unit/adapters-db/` and real adapter conformance tests to `src/__tests__/conformance/adapters-db/`.
+- **Current convention**: no `*.test.ts` files should live outside `src/__tests__/`.
+- **Helper decision**: keep `src/__tests__/helpers/database-adapter-conformance*` and `src/__tests__/helpers/database-adapter-real-targets/*` in place for now. They are specialized conformance/testbed helpers, not generic support. Revisit only as a dedicated conformance-architecture slice.
+- **Validation**: targeted moved test sets plus full `npm run test` passed during the move slices.
 
 ### P2 — Centralize adapter/CLI schema metadata
 
@@ -56,9 +64,9 @@ Implemented: inline Prisma, Drizzle, and Kysely schema strings were moved to foc
 
 ## Recommended Immediate Slice
 
-Proceed to **P2 — Centralize adapter/CLI schema metadata** or reassess project folder architecture.
+Proceed to **P2 — Centralize adapter/CLI schema metadata**.
 
-Reason: the low-risk oversized-test split backlog is complete; the next useful work is structural and should be planned before implementation.
+Reason: the low-risk test split and folder-layout cleanup backlog is complete; the next useful work is structural and should be planned before implementation.
 
 ## Audit Doc Disposition
 
