@@ -32,7 +32,8 @@ Implemented: inline Prisma, Drizzle, and Kysely schema strings were moved to foc
   - split the former `src/core/runtime/scheduled-worker.test.ts` into `src/core/runtime/scheduled-send.test.ts`, `src/core/runtime/scheduled-process-delivery.test.ts`, `src/core/runtime/scheduled-worker-lifecycle.test.ts`, and `src/core/runtime/scheduled-worker-failures.test.ts`.
   - split the former `src/__tests__/integration/scheduled-worker.test.ts` into `src/__tests__/integration/scheduled-worker-claim.test.ts`, `src/__tests__/integration/scheduled-worker-retention.test.ts`, `src/__tests__/integration/scheduled-worker-resolve-retry.test.ts`, and `src/__tests__/integration/scheduled-worker-fire-enqueue.test.ts`.
   - split in-app notification persistence coverage from `src/core/runtime/processor.test.ts` into `src/core/runtime/processor-in-app.test.ts`.
-- **Remaining likely files**: `src/core/herald-registry.test.ts`.
+  - split the former `src/core/herald-registry.test.ts` into behavior-focused registry/configured-event test files.
+- **Remaining likely files**: none from the original oversized-test backlog.
 - **Risk**: Low if move-only.
 - **Validation**: targeted moved test set plus `npm run test`.
 - **SDD**: Not needed for mechanical split.
@@ -55,9 +56,9 @@ Implemented: inline Prisma, Drizzle, and Kysely schema strings were moved to foc
 
 ## Recommended Immediate Slice
 
-Continue with **P1 — Split oversized tests by behavior**.
+Proceed to **P2 — Centralize adapter/CLI schema metadata** or reassess project folder architecture.
 
-Reason: the CLI schema extraction is complete; the remaining low-risk work is reducing large test files before taking on schema metadata or adapter cleanup.
+Reason: the low-risk oversized-test split backlog is complete; the next useful work is structural and should be planned before implementation.
 
 ## Audit Doc Disposition
 
