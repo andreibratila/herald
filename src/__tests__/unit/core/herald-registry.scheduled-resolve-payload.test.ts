@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { z } from "zod";
-import { defineEvent } from "./define.js";
-import { createHerald } from "./herald.js";
-import { createMockDb } from "../__tests__/support/adapters/mock-db-adapter.js";
+import { defineEvent } from "../../../core/define.js";
+import { createHerald } from "../../../core/herald.js";
+import { createMockDb } from "../../support/adapters/mock-db-adapter.js";
 
 describe("resolvePayload returns null → delivery fails with message", () => {
 	it("resolvePayload returning null marks delivery failed with 'null or undefined' in lastError", async () => {

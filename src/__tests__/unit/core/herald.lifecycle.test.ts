@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { createHerald } from "./herald.js";
-import { createMockDb } from "../__tests__/support/adapters/mock-db-adapter.js";
-import { createMockMailAdapter } from "../__tests__/support/adapters/mock-mail-adapter.js";
+import { createHerald } from "../../../core/herald.js";
+import { createMockDb } from "../../support/adapters/mock-db-adapter.js";
+import { createMockMailAdapter } from "../../support/adapters/mock-mail-adapter.js";
 
-import { makeOrderSetup } from "../__tests__/support/core/runtime.js";
+import { makeOrderSetup } from "../../support/core/runtime.js";
 
 // ─── Hooks ────────────────────────────────────────────────────
 

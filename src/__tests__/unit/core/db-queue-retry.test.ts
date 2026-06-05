@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { z } from "zod";
-import { createHerald } from "./herald.js";
-import { defineEvent } from "./define.js";
-import { createMockDb } from "../__tests__/support/adapters/mock-db-adapter.js";
-import { createMockMailAdapter } from "../__tests__/support/adapters/mock-mail-adapter.js";
+import { createHerald } from "../../../core/herald.js";
+import { defineEvent } from "../../../core/define.js";
+import { createMockDb } from "../../support/adapters/mock-db-adapter.js";
+import { createMockMailAdapter } from "../../support/adapters/mock-mail-adapter.js";
 
 type BossWorkHandler = (
 	jobs: Array<{

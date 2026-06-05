@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
-import { defineEvent } from "./define.js";
-import { createHerald } from "./herald.js";
-import { createMockDb } from "../__tests__/support/adapters/mock-db-adapter.js";
-import { makeBaseEvent, makeHeraldWithInstance } from "../__tests__/support/core/herald-registry.js";
+import { defineEvent } from "../../../core/define.js";
+import { createHerald } from "../../../core/herald.js";
+import { createMockDb } from "../../support/adapters/mock-db-adapter.js";
+import { makeBaseEvent, makeHeraldWithInstance } from "../../support/core/herald-registry.js";
 
 describe("createHerald with events map", () => {
 	it("resolves event by name from instance map when events map passed", async () => {

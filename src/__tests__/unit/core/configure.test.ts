@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { createMockDb } from "../__tests__/support/adapters/mock-db-adapter.js";
-import { createMockMailAdapter } from "../__tests__/support/adapters/mock-mail-adapter.js";
-import { configureHerald, getEventAppId } from "./configure.js";
+import { createMockDb } from "../../support/adapters/mock-db-adapter.js";
+import { createMockMailAdapter } from "../../support/adapters/mock-mail-adapter.js";
+import { configureHerald, getEventAppId } from "../../../core/configure.js";
 
 describe("configureHerald", () => {
 	it("is pure and does not invoke lazy adapter factories until create()", () => {

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { z } from "zod";
-import { defineEvent } from "./define.js";
-import { createHerald } from "./herald.js";
-import { createMockDb } from "../__tests__/support/adapters/mock-db-adapter.js";
-import { makeBaseEvent, makeHeraldWithInstance } from "../__tests__/support/core/herald-registry.js";
+import { defineEvent } from "../../../core/define.js";
+import { createHerald } from "../../../core/herald.js";
+import { createMockDb } from "../../support/adapters/mock-db-adapter.js";
+import { makeBaseEvent, makeHeraldWithInstance } from "../../support/core/herald-registry.js";
 
 // ─── PR#3 Orphan template detection ──────────────────────────
 // With the new API, `dispatch` return is narrowed to `keyof TTemplates` at compile time,
