@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { main } from "./index.js";
+import { main } from "../../../cli/index.js";
 
 describe("CLI — main(argv)", () => {
 	it("prisma adapter outputs HeraldNotification schema", () => {

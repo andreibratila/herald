@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createHerald } from "../core/herald.js";
-import { defineEvent } from "../core/define.js";
-import { createMockDb } from "../__tests__/support/adapters/mock-db-adapter.js";
-import { hashSubjectId } from "./index.js";
+import { createHerald } from "../../../core/herald.js";
+import { defineEvent } from "../../../core/define.js";
+import { createMockDb } from "../../support/adapters/mock-db-adapter.js";
+import { hashSubjectId } from "../../../compliance/index.js";
 
 function makeHerald() {
 	const db = createMockDb();

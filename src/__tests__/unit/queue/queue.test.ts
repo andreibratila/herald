@@ -4,8 +4,8 @@ import {
 	createQueue,
 	calculateBackoff,
 	createDbDriver,
-} from "./index.js";
-import type { HeraldQueueAdapter } from "../types/index.js";
+} from "../../../queue/index.js";
+import type { HeraldQueueAdapter } from "../../../types/index.js";
 
 describe("sync driver — enqueue runs processor in-band", () => {
 	it("processor is called with the exact job before enqueue resolves", async () => {

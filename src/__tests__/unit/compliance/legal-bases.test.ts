@@ -4,11 +4,11 @@ import {
 	resolveCompliancePolicy,
 	validateCompliancePolicy,
 	validateLegalBasisDefinitions,
-} from "./index.js";
+} from "../../../compliance/index.js";
 import type {
 	EventCompliancePolicy,
 	LegalBasisDefinition,
-} from "../types/index.js";
+} from "../../../types/index.js";
 
 describe("legalBases.defaults", () => {
 	it("includes the built-in legal basis presets", () => {

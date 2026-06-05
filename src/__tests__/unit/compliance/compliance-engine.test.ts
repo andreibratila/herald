@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createMockDb } from "../__tests__/support/adapters/mock-db-adapter.js";
-import { evaluateCompliance, legalBases } from "./index.js";
+import { createMockDb } from "../../support/adapters/mock-db-adapter.js";
+import { evaluateCompliance, legalBases } from "../../../compliance/index.js";
 
 const baseInput = {
 	subjectId: "user_123",
