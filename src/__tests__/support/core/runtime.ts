@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { defineEvent } from "../define.js";
-import { createHerald } from "../herald.js";
-import { createMockDb } from "../../__tests__/helpers/mock-db-adapter.js";
-import { createMockMailAdapter } from "../../__tests__/helpers/mock-mail-adapter.js";
-import type { AnyEventRef } from "../../types/index.js";
+import { defineEvent } from "../../../core/define.js";
+import { createHerald } from "../../../core/herald.js";
+import { createMockDb } from "../../helpers/mock-db-adapter.js";
+import { createMockMailAdapter } from "../../helpers/mock-mail-adapter.js";
+import type { AnyEventRef } from "../../../types/index.js";
 
 export type MailAdapter = ReturnType<typeof createMockMailAdapter>;
 export type MockDb = ReturnType<typeof createMockDb>;

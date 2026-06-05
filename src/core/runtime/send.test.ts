@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import { defineEvent } from "../define.js";
-import { makeHerald, makeOrderSetup } from "./test-utils.js";
+import { makeHerald, makeOrderSetup } from "../../__tests__/support/core/runtime.js";
 
 // ─── send() — unknown event throws ────────────────────────────
 

@@ -16,7 +16,7 @@ import type {
 	Delivery,
 	HeraldDatabaseAdapter,
 } from "../../types/index.js";
-import { makeHerald, makeOrderSetup } from "./test-utils.js";
+import { makeHerald, makeOrderSetup } from "../../__tests__/support/core/runtime.js";
 
 describe("compliance purge", () => {
 	it("purges expired deliveries and audit logs using their own retention windows", async () => {
