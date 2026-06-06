@@ -84,7 +84,7 @@ export const heraldDeliveries = pgTable(
 		index("herald_delivery_idempotency_idx").on(t.idempotencyKey),
 		index("herald_delivery_created_idx").on(t.createdAt),
 		index("herald_delivery_status_scheduled_idx").on(t.status, t.scheduledAt),
-		index("herald_delivery_status_claim_exp_idx").on(
+		index("herald_delivery_status_claim_expires_idx").on(
 			t.status,
 			t.claimExpiresAt,
 		),
