@@ -1,7 +1,27 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect } from "vitest";
 import { main } from "../../../cli/index.js";
 
+const readFixture = (name: string) =>
+	readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
+
+const schemaFixtures = {
+	prisma: readFixture("prisma.schema.prisma"),
+	drizzle: readFixture("drizzle.schema.ts"),
+	kysely: readFixture("kysely.schema.sql"),
+} as const;
+
 describe("CLI — main(argv)", () => {
+	it.each([
+		["prisma", schemaFixtures.prisma],
+		["drizzle", schemaFixtures.drizzle],
+		["kysely", schemaFixtures.kysely],
+	] as const)("%s adapter output matches the golden fixture", (adapter, fixture) => {
+		const { stdout, exitCode } = main(["generate", "--adapter", adapter]);
+		expect(exitCode).toBe(0);
+		expect(stdout).toBe(fixture);
+	});
+
 	it("prisma adapter outputs HeraldNotification schema", () => {
 		const { stdout, exitCode } = main(["generate", "--adapter", "prisma"]);
 		expect(exitCode).toBe(0);
