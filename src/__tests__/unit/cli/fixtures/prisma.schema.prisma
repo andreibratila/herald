@@ -36,7 +36,7 @@ model HeraldDelivery {
   externalId         String?   @map("external_id") // provider message ID
   idempotencyKey     String?   @map("idempotency_key")
   scheduledAt        DateTime? @map("scheduled_at")
-  acceptedAt             DateTime? @map("accepted_at")
+  acceptedAt         DateTime? @map("accepted_at")
   failedAt           DateTime? @map("failed_at")
   claimedAt          DateTime? @map("claimed_at") // when worker claimed this row
   claimExpiresAt     DateTime? @map("claim_expires_at") // lease expiry — if past, re-claimable
@@ -44,7 +44,7 @@ model HeraldDelivery {
   resolveAttempts    Int       @default(0) @map("resolve_attempts") // count of resolvePayload failures
   queueJobId         String?   @map("queue_job_id") // pg-boss job ID for cancelJobs
   bypassComplianceCheck Boolean @default(false) @map("bypass_compliance_check")
-  sideEffectsCompletedAt  DateTime? @map("side_effects_completed_at") // set after email+inApp, before updateDelivery("accepted")
+  sideEffectsCompletedAt DateTime? @map("side_effects_completed_at") // set after email+inApp, before updateDelivery("accepted")
   renderedHash       String?   @map("rendered_hash") // SHA-256 hex of subject+html after rendering
   addressHash        String?   @map("address_hash") // app-supplied hash for suppression checks
   purpose            String?   // compliance purpose snapshot

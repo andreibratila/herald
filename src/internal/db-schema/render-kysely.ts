@@ -15,12 +15,7 @@ const COLUMN_WIDTH_BY_TABLE: Record<string, number> = {
 };
 
 const COLUMN_WIDTH_OVERRIDES: Record<string, number> = {
-	"deliveries.acceptedAt": 25,
 	"deliveries.complianceRequired": 22,
-};
-
-const POSTGRES_INDEX_NAMES: Record<string, string> = {
-	herald_delivery_status_claim_expires_idx: "herald_delivery_status_claim_exp_idx",
 };
 
 const INDEX_NAME_WIDTH: Record<string, number> = {
@@ -31,7 +26,7 @@ const INDEX_NAME_WIDTH: Record<string, number> = {
 	herald_delivery_idempotency_idx: 38,
 	herald_delivery_created_idx: 38,
 	herald_delivery_status_scheduled_idx: 38,
-	herald_delivery_status_claim_exp_idx: 38,
+	herald_delivery_status_claim_expires_idx: 38,
 	herald_delivery_scheduled_idx: 38,
 	herald_audit_user_idx: 25,
 	herald_audit_created_idx: 25,
@@ -108,7 +103,9 @@ function postgresSuffix(field: DbFieldMetadata): string {
 	return parts.join(" ");
 }
 
-function postgresDefault(defaultKind: DbDefaultKind | undefined): string | undefined {
+function postgresDefault(
+	defaultKind: DbDefaultKind | undefined,
+): string | undefined {
 	switch (defaultKind) {
 		case "now":
 		case "updatedAt":
@@ -125,17 +122,25 @@ function postgresDefault(defaultKind: DbDefaultKind | undefined): string | undef
 }
 
 function renderIndex(table: DbTableMetadata, index: DbIndexMetadata): string {
-	const name = POSTGRES_INDEX_NAMES[index.name] ?? index.name;
+	const name = index.name;
 	const indexName = name.padEnd(INDEX_NAME_WIDTH[name] ?? name.length);
-	const columns = index.fields.map((field) => columnName(table, field)).join(", ");
-	const where = index.where ? ` WHERE ${columnName(table, index.where.field)} = '${index.where.equals}'` : "";
+	const columns = index.fields
+		.map((field) => columnName(table, field))
+		.join(", ");
+	const where = index.where
+		? ` WHERE ${columnName(table, index.where.field)} = '${index.where.equals}'`
+		: "";
 	return `CREATE INDEX IF NOT EXISTS ${indexName} ON ${table.tableName} (${columns})${where};`;
 }
 
 function columnName(table: DbTableMetadata, fieldName: string): string {
-	const field = table.fields.find((candidate) => candidate.propertyName === fieldName);
+	const field = table.fields.find(
+		(candidate) => candidate.propertyName === fieldName,
+	);
 	if (!field) {
-		throw new Error(`Unknown DB schema field "${fieldName}" on table "${table.id}"`);
+		throw new Error(
+			`Unknown DB schema field "${fieldName}" on table "${table.id}"`,
+		);
 	}
 	return field.columnName;
 }

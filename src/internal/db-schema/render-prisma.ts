@@ -27,10 +27,7 @@ const FIELD_NAME_WIDTH_BY_TABLE: Record<string, number> = {
 	auditLogs: 11,
 };
 
-const FIELD_NAME_WIDTH_OVERRIDES: Record<string, number> = {
-	"deliveries.acceptedAt": 23,
-	"deliveries.sideEffectsCompletedAt": 24,
-};
+const FIELD_NAME_WIDTH_OVERRIDES: Record<string, number> = {};
 
 const TYPE_WIDTH_BY_TABLE: Record<string, number> = {
 	notifications: 10,
@@ -68,7 +65,9 @@ ${table.indexes.map((index) => `  ${renderIndex(index)}`).join("\n")}
 function prismaModelName(table: DbTableMetadata): string {
 	const name = PRISMA_MODEL_NAMES[table.id];
 	if (!name) {
-		throw new Error(`Unknown Prisma model name for DB schema table "${table.id}"`);
+		throw new Error(
+			`Unknown Prisma model name for DB schema table "${table.id}"`,
+		);
 	}
 	return name;
 }
@@ -80,7 +79,10 @@ function renderField(table: DbTableMetadata, field: DbFieldMetadata): string {
 	return `${name}${type}${suffix}`.trimEnd();
 }
 
-function fieldNameWidth(table: DbTableMetadata, field: DbFieldMetadata): number {
+function fieldNameWidth(
+	table: DbTableMetadata,
+	field: DbFieldMetadata,
+): number {
 	return Math.max(
 		FIELD_NAME_WIDTH_OVERRIDES[`${table.id}.${field.propertyName}`] ??
 			FIELD_NAME_WIDTH_BY_TABLE[table.id] ??
@@ -137,7 +139,9 @@ function renderFieldSuffix(field: DbFieldMetadata): string {
 	return parts.join(" ");
 }
 
-function prismaDefault(defaultKind: DbDefaultKind | undefined): string | undefined {
+function prismaDefault(
+	defaultKind: DbDefaultKind | undefined,
+): string | undefined {
 	switch (defaultKind) {
 		case "generatedId":
 			return "@default(cuid())";

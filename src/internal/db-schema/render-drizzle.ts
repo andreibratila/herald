@@ -22,10 +22,7 @@ const PROPERTY_WIDTH_BY_TABLE: Record<string, number> = {
 	auditLogs: 12,
 };
 
-const PROPERTY_WIDTH_OVERRIDES: Record<string, number> = {
-	"deliveries.acceptedAt": 24,
-	"deliveries.sideEffectsCompletedAt": 25,
-};
+const PROPERTY_WIDTH_OVERRIDES: Record<string, number> = {};
 
 export function renderDrizzleSchema(schema: DbSchemaMetadata): string {
 	return `
@@ -60,7 +57,9 @@ ${table.indexes.map((index) => `    ${renderIndex(index)},`).join("\n")}
 function drizzleExportName(table: DbTableMetadata): string {
 	const name = DRIZZLE_EXPORT_NAMES[table.id];
 	if (!name) {
-		throw new Error(`Unknown Drizzle export name for DB schema table "${table.id}"`);
+		throw new Error(
+			`Unknown Drizzle export name for DB schema table "${table.id}"`,
+		);
 	}
 	return name;
 }
@@ -68,7 +67,10 @@ function drizzleExportName(table: DbTableMetadata): string {
 function renderField(table: DbTableMetadata, field: DbFieldMetadata): string {
 	const property = `${field.propertyName}:`.padEnd(propertyWidth(table, field));
 	const expression = `${drizzleColumn(field)},`;
-	const comment = field.comment && shouldRenderDrizzleComment(field) ? `           // ${field.comment}` : "";
+	const comment =
+		field.comment && shouldRenderDrizzleComment(field)
+			? `           // ${field.comment}`
+			: "";
 	return `${property}${expression}${comment}`;
 }
 
