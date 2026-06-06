@@ -13,6 +13,57 @@ The conformance suite **MUST** provide a reusable harness that accepts an adapte
 - **And** grouped entrypoints can be invoked independently by method area
 - **And** no external database service is required for the base unit suite
 
+### Requirement: Real DB Fixture Structural Parity
+Real database conformance fixtures **MUST** be validated against the authoritative Herald database schema metadata in `HERALD_DB_SCHEMA` without requiring a live database, Docker, migration execution, Prisma generation, Drizzle migration execution, Herald CLI invocation, or generated fixture output.
+
+The first-slice parity contract covers these real fixtures:
+
+- `src/__tests__/helpers/database-adapter-real-targets/herald-schema.sql`
+- `src/__tests__/helpers/database-adapter-real-targets/drizzle-schema.ts`
+
+The Prisma fixture template is intentionally deferred from this requirement:
+
+- `src/__tests__/helpers/database-adapter-real-targets/prisma-schema.template`
+
+Structural parity **MUST** compare schema meaning rather than renderer text equality. The validation **MUST** detect missing or extra Herald tables, missing or extra columns by table, missing or extra metadata-declared indexes, incorrect table/index association, incorrect index field order, and incorrect simple equality partial-index predicates. Primary keys **MUST NOT** be treated as extra indexes unless `HERALD_DB_SCHEMA` declares them as indexes.
+
+Failure diagnostics **MUST** identify the fixture path, affected table/column/index/predicate, expected metadata-derived value, and actual fixture-derived value.
+
+Column type parity, primary-key parity, nullability parity, default-value parity, Prisma template parity, fixture generation, CLI output parity, and global PostgreSQL fidelity are deferred from this requirement. The first-slice validation **MUST NOT** fail solely because metadata logical `json` is represented as SQL `JSONB` / Drizzle `jsonb()` or metadata logical `timestamp` is represented as SQL `TIMESTAMPTZ` / the existing Drizzle timezone timestamp helper.
+
+Drizzle validation **MUST** use narrow source scanning constrained to the current real fixture declaration style, including ``pgTable(..., columns, (t) => [index(...).on(...).where(sql`...`)])``. It **MUST NOT** require full TypeScript AST analysis, arbitrary TypeScript evaluation, runtime Drizzle metadata introspection, or a live database in this slice.
+
+Partial-index predicate normalization **MUST** be limited to simple equality predicates matching metadata shape `{ field, equals }`, such as metadata `status == scheduled`, SQL `WHERE status = 'scheduled'`, and Drizzle ``.where(sql`status = 'scheduled'`)``. General SQL predicate parsing is deferred.
+
+#### Scenario: SQL and Drizzle real fixtures match authoritative schema metadata structurally
+- **Given** `HERALD_DB_SCHEMA` defines authoritative Herald database tables, columns, indexes, index field order, and simple equality partial-index predicates
+- **And** the SQL and Drizzle real DB fixtures define schema objects for real database conformance tests
+- **When** DB-free fixture parity validation runs for those fixtures
+- **Then** every metadata table covered by each fixture exists in that fixture
+- **And** no fixture defines extra Herald tables outside the authoritative metadata
+- **And** every covered table has the same column names as the metadata
+- **And** every metadata-declared index exists in the fixture on the metadata-declared table
+- **And** no fixture defines extra non-primary-key indexes for Herald tables outside the authoritative metadata
+- **And** every metadata-declared index preserves the metadata-declared field order
+- **And** every supported partial index preserves the metadata-declared simple equality predicate meaning
+
+#### Scenario: Fixture parity catches delivery claim expiration index drift
+- **Given** `HERALD_DB_SCHEMA` defines the delivery claim expiration index as `herald_delivery_status_claim_expires_idx`
+- **And** a real DB fixture defines the same logical index using stale name `herald_delivery_status_claim_exp_idx`
+- **When** DB-free fixture parity validation runs
+- **Then** validation fails for the stale fixture
+- **And** the failure identifies the fixture path
+- **And** the failure identifies the missing authoritative index name
+- **And** the failure identifies the extra stale index name
+- **And** the fixture must be updated to use `herald_delivery_status_claim_expires_idx`
+
+#### Scenario: Deferred fixture parity dimensions are not treated as failures
+- **Given** primary-key parity, nullability parity, default-value parity, complete logical type parity, Prisma template parity, fixture generation, CLI output parity, and global PostgreSQL fidelity requirements are outside the first-slice scope
+- **When** the first-slice parity validation runs
+- **Then** those deferred dimensions are not required for a passing result
+- **And** failures are limited to the structural parity dimensions explicitly covered by this requirement
+- **And** future changes may add separate requirements for deferred dimensions without redefining this first-slice contract
+
 ### Requirement: Notification Operations Semantics
 Database adapters **MUST** support notification create/list/get/count/mark-read semantics with deterministic pagination and ordering.
 
