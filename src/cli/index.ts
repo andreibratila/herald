@@ -28,9 +28,9 @@ Options:
   --help      Show this help
 
 Examples:
-  # Append to existing prisma schema:
-  # Requires Prisma generator previewFeatures = ["partialIndexes"]
-  # Herald emits Prisma's documented @@index(..., where: ...) partial-index syntax.
+  # Append or merge into an existing Prisma schema:
+  # Requires Prisma >=7.4.0 and generator previewFeatures = ["partialIndexes"].
+  # Herald emits schema text only; run your normal Prisma workflow after review.
   npx herald generate --adapter prisma >> prisma/schema.prisma
 
   # Create a new drizzle schema file:

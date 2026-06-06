@@ -1,9 +1,9 @@
 
-// ─── Add to your schema.prisma ───────────────────────────────
-// Run: npx herald generate --adapter prisma >> prisma/schema.prisma
-// Requires Prisma generator previewFeatures = ["partialIndexes"]
-// Herald intentionally emits Prisma's documented @@index(..., where: ...) partial-index syntax.
-// Then: npx prisma migrate dev
+// ─── Herald Prisma models snippet ────────────────────────────
+// Append or merge into your Prisma schema:
+//   npx herald generate --adapter prisma >> prisma/schema.prisma
+// Requires Prisma >=7.4.0 and generator previewFeatures = ["partialIndexes"].
+// Herald emits schema text only; review it and run your normal Prisma workflow.
 
 model HeraldNotification {
   id           String    @id @default(cuid())
@@ -18,9 +18,9 @@ model HeraldNotification {
   readAt       DateTime? @map("read_at")
   createdAt    DateTime  @default(now()) @map("created_at")
 
-  @@index([userId, readAt])
-  @@index([userId, createdAt])
-  @@index([deliveryId])
+  @@index([userId, readAt], map: "herald_notif_user_read_idx")
+  @@index([userId, createdAt], map: "herald_notif_user_created_idx")
+  @@index([deliveryId], map: "herald_notif_delivery_idx")
   @@map("herald_notifications")
 }
 
@@ -62,11 +62,11 @@ model HeraldDelivery {
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  @@index([userId])
+  @@index([userId], map: "herald_delivery_user_idx")
   @@index([idempotencyKey], map: "herald_delivery_idempotency_idx")
-  @@index([createdAt])
-  @@index([status, scheduledAt])
-  @@index([status, claimExpiresAt])
+  @@index([createdAt], map: "herald_delivery_created_idx")
+  @@index([status, scheduledAt], map: "herald_delivery_status_scheduled_idx")
+  @@index([status, claimExpiresAt], map: "herald_delivery_status_claim_expires_idx")
   @@index([scheduledAt], where: { status: "scheduled" }, map: "herald_delivery_scheduled_idx")
   @@map("herald_deliveries")
 }
@@ -89,7 +89,7 @@ model HeraldConsentEvent {
   metadata              Json?
   createdAt             DateTime @default(now()) @map("created_at")
 
-  @@index([subjectId, channel, purpose, createdAt])
+  @@index([subjectId, channel, purpose, createdAt], map: "herald_consent_event_scope_idx")
   @@map("herald_consent_events")
 }
 
@@ -102,7 +102,7 @@ model HeraldSuppression {
   source      String?
   createdAt   DateTime @default(now()) @map("created_at")
 
-  @@index([addressHash, channel, purpose])
+  @@index([addressHash, channel, purpose], map: "herald_suppression_lookup_idx")
   @@map("herald_suppressions")
 }
 
@@ -115,7 +115,7 @@ model HeraldAuditLog {
   metadata   Json?    // non-PII only
   createdAt  DateTime @default(now()) @map("created_at")
 
-  @@index([userId])
-  @@index([createdAt])
+  @@index([userId], map: "herald_audit_user_idx")
+  @@index([createdAt], map: "herald_audit_created_idx")
   @@map("herald_audit_logs")
 }

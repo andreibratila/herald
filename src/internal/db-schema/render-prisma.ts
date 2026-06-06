@@ -14,11 +14,6 @@ const PRISMA_MODEL_NAMES: Record<string, string> = {
 	auditLogs: "HeraldAuditLog",
 };
 
-const PRISMA_MAPPED_INDEXES = new Set([
-	"herald_delivery_idempotency_idx",
-	"herald_delivery_scheduled_idx",
-]);
-
 const FIELD_NAME_WIDTH_BY_TABLE: Record<string, number> = {
 	notifications: 13,
 	deliveries: 19,
@@ -43,11 +38,11 @@ const TYPE_WIDTH_OVERRIDES: Record<string, number> = {
 
 export function renderPrismaSchema(schema: DbSchemaMetadata): string {
 	return `
-// ─── Add to your schema.prisma ───────────────────────────────
-// Run: npx herald generate --adapter prisma >> prisma/schema.prisma
-// Requires Prisma generator previewFeatures = ["partialIndexes"]
-// Herald intentionally emits Prisma's documented @@index(..., where: ...) partial-index syntax.
-// Then: npx prisma migrate dev
+// ─── Herald Prisma models snippet ────────────────────────────
+// Append or merge into your Prisma schema:
+//   npx herald generate --adapter prisma >> prisma/schema.prisma
+// Requires Prisma >=7.4.0 and generator previewFeatures = ["partialIndexes"].
+// Herald emits schema text only; review it and run your normal Prisma workflow.
 
 ${schema.tables.map(renderTable).join("\n\n")}
 `;
@@ -165,8 +160,5 @@ function renderIndex(index: DbIndexMetadata): string {
 	if (index.where) {
 		return `@@index([${fields}], where: { ${index.where.field}: "${index.where.equals}" }, map: "${index.name}")`;
 	}
-	if (PRISMA_MAPPED_INDEXES.has(index.name)) {
-		return `@@index([${fields}], map: "${index.name}")`;
-	}
-	return `@@index([${fields}])`;
+	return `@@index([${fields}], map: "${index.name}")`;
 }

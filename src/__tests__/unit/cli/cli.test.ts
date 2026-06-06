@@ -6,7 +6,7 @@ const readFixture = (name: string) =>
 	readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
 
 const schemaFixtures = {
-	prisma: readFixture("prisma.schema.prisma"),
+	prisma: readFixture("prisma.schema.txt"),
 	drizzle: readFixture("drizzle.schema.ts"),
 	kysely: readFixture("kysely.schema.sql"),
 } as const;
