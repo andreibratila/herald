@@ -1,0 +1,177 @@
+import type {
+	DbFieldMetadata,
+	DbIndexMetadata,
+	DbPrivacyAnnotation,
+	DbSchemaMetadata,
+	DbTableMetadata,
+} from "./types.js";
+
+const tables = [
+	{
+		id: "notifications",
+		tableName: "herald_notifications",
+		annotations: ["inAppNotification"],
+		fields: [
+			field("id", "id", "string", false, "generatedId", ["operational"]),
+			field("userId", "user_id", "string", false, undefined, ["subjectIdentifier"]),
+			field("eventType", "event_type", "string", false, undefined, ["operational"]),
+			field("templateName", "template_name", "string", false, undefined, ["operational"]),
+			field("deliveryId", "delivery_id", "string", true, undefined, ["operational"]),
+			field("title", "title", "string", false, undefined, ["userVisibleContent"]),
+			field("body", "body", "string", true, undefined, ["userVisibleContent"]),
+			field("href", "href", "string", true, undefined, ["userVisibleContent"]),
+			field("data", "data", "json", true, undefined, ["persistedPayloadSubset"], "derived from persistedFields payload paths"),
+			field("readAt", "read_at", "timestamp", true, undefined, ["operational"]),
+			field("createdAt", "created_at", "timestamp", false, "now", ["operational"]),
+		],
+		indexes: [
+			index("herald_notif_user_read_idx", ["userId", "readAt"]),
+			index("herald_notif_user_created_idx", ["userId", "createdAt"]),
+			index("herald_notif_delivery_idx", ["deliveryId"]),
+		],
+	},
+	{
+		id: "deliveries",
+		tableName: "herald_deliveries",
+		annotations: ["deliveryLedger"],
+		fields: [
+			field("id", "id", "string", false, "generatedId", ["operational"]),
+			field("userId", "user_id", "string", false, undefined, ["subjectIdentifier"]),
+			field("eventType", "event_type", "string", false, undefined, ["operational"]),
+			field("templateName", "template_name", "string", false, undefined, ["operational"]),
+			field("channel", "channel", "string", false, undefined, ["operational"], "\"email\" | \"inApp\""),
+			field("status", "status", "string", false, "pending", ["operational"]),
+			field("attempts", "attempts", "integer", false, "zero", ["operational"]),
+			field("lastError", "last_error", "string", true, undefined, ["operational"]),
+			field("externalId", "external_id", "string", true, undefined, ["providerIdentifier"], "provider message ID"),
+			field("idempotencyKey", "idempotency_key", "string", true, undefined, ["operational"]),
+			field("scheduledAt", "scheduled_at", "timestamp", true, undefined, ["operational"]),
+			field("acceptedAt", "accepted_at", "timestamp", true, undefined, ["operational"]),
+			field("failedAt", "failed_at", "timestamp", true, undefined, ["operational"]),
+			field("claimedAt", "claimed_at", "timestamp", true, undefined, ["operational"], "when worker claimed this row"),
+			field("claimExpiresAt", "claim_expires_at", "timestamp", true, undefined, ["operational"], "lease expiry — if past, re-claimable"),
+			field("claimedBy", "claimed_by", "string", true, undefined, ["operational"], "worker ID string"),
+			field("resolveAttempts", "resolve_attempts", "integer", false, "zero", ["operational"], "count of resolvePayload failures"),
+			field("queueJobId", "queue_job_id", "string", true, undefined, ["operational"], "pg-boss job ID for cancelJobs"),
+			field("bypassComplianceCheck", "bypass_compliance_check", "boolean", false, "false", ["complianceEvidence"]),
+			field("sideEffectsCompletedAt", "side_effects_completed_at", "timestamp", true, undefined, ["operational"], "set after email+inApp, before updateDelivery(\"accepted\")"),
+			field("renderedHash", "rendered_hash", "string", true, undefined, ["complianceEvidence"], "SHA-256 hex of subject+html after rendering"),
+			field("addressHash", "address_hash", "string", true, undefined, ["appSuppliedHash"], "app-supplied hash for suppression checks"),
+			field("purpose", "purpose", "string", true, undefined, ["complianceEvidence"], "compliance purpose snapshot"),
+			field("legalBasisAtSend", "legal_basis_at_send", "string", true, undefined, ["complianceEvidence"], "legal basis snapshot"),
+			field("consentEventId", "consent_event_id", "string", true, undefined, ["complianceEvidence"], "consent evidence ID used at send/fire time"),
+			field("suppressionId", "suppression_id", "string", true, undefined, ["complianceEvidence"], "suppression ID when denied at fire time"),
+			field("complianceEvidenceId", "compliance_evidence_id", "string", true, undefined, ["complianceEvidence"], "app-owned legal-basis evidence reference"),
+			field("complianceRequired", "compliance_required", "boolean", true, undefined, ["complianceEvidence"]),
+			field("complianceRequiresConsentEvent", "compliance_requires_consent_event", "boolean", true, undefined, ["complianceEvidence"]),
+			field("complianceRequiresSuppressionCheck", "compliance_requires_suppression_check", "boolean", true, undefined, ["complianceEvidence"]),
+			field("complianceRequiresEvidence", "compliance_requires_evidence", "boolean", true, undefined, ["complianceEvidence"]),
+			field("complianceDefaultDecision", "compliance_default_decision", "string", true, undefined, ["complianceEvidence"]),
+			field("complianceDecision", "compliance_decision", "string", true, undefined, ["complianceEvidence"], "allowed | denied | bypassed"),
+			field("complianceCheckedAt", "compliance_checked_at", "timestamp", true, undefined, ["complianceEvidence"], "when compliance was evaluated"),
+			field("createdAt", "created_at", "timestamp", false, "now", ["operational"]),
+			field("updatedAt", "updated_at", "timestamp", false, "updatedAt", ["operational"]),
+		],
+		indexes: [
+			index("herald_delivery_user_idx", ["userId"]),
+			index("herald_delivery_idempotency_idx", ["idempotencyKey"]),
+			index("herald_delivery_created_idx", ["createdAt"]),
+			index("herald_delivery_status_scheduled_idx", ["status", "scheduledAt"]),
+			index("herald_delivery_status_claim_expires_idx", ["status", "claimExpiresAt"]),
+			{ ...index("herald_delivery_scheduled_idx", ["scheduledAt"]), where: { field: "status", equals: "scheduled" } },
+		],
+	},
+	{
+		id: "consentEvents",
+		tableName: "herald_consent_events",
+		annotations: ["consentEvidence"],
+		fields: [
+			field("id", "id", "string", false, "generatedId", ["operational"]),
+			field("subjectId", "subject_id", "string", false, undefined, ["subjectIdentifier"]),
+			field("subjectType", "subject_type", "string", true, undefined, ["subjectIdentifier"]),
+			field("channel", "channel", "string", false, undefined, ["complianceEvidence"]),
+			field("purpose", "purpose", "string", false, undefined, ["complianceEvidence"]),
+			field("status", "status", "string", false, undefined, ["complianceEvidence"], "\"granted\" | \"withdrawn\""),
+			field("legalBasis", "legal_basis", "string", false, undefined, ["complianceEvidence"]),
+			field("source", "source", "string", false, undefined, ["complianceEvidence"]),
+			field("formId", "form_id", "string", true, undefined, ["complianceEvidence"]),
+			field("legalNoticeVersionId", "legal_notice_version_id", "string", true, undefined, ["complianceEvidence"]),
+			field("privacyPolicyVersion", "privacy_policy_version", "string", true, undefined, ["complianceEvidence"]),
+			field("checkboxTextVersion", "checkbox_text_version", "string", true, undefined, ["complianceEvidence"]),
+			field("ipHash", "ip_hash", "string", true, undefined, ["appSuppliedHash"]),
+			field("userAgentHash", "user_agent_hash", "string", true, undefined, ["appSuppliedHash"]),
+			field("metadata", "metadata", "json", true, undefined, ["auditMetadataNonPii"]),
+			field("createdAt", "created_at", "timestamp", false, "now", ["operational"]),
+		],
+		indexes: [index("herald_consent_event_scope_idx", ["subjectId", "channel", "purpose", "createdAt"])],
+	},
+	{
+		id: "suppressions",
+		tableName: "herald_suppressions",
+		annotations: ["suppression"],
+		fields: [
+			field("id", "id", "string", false, "generatedId", ["operational"]),
+			field("addressHash", "address_hash", "string", false, undefined, ["appSuppliedHash"]),
+			field("channel", "channel", "string", false, undefined, ["complianceEvidence"]),
+			field("purpose", "purpose", "string", true, undefined, ["complianceEvidence"]),
+			field("reason", "reason", "string", false, undefined, ["complianceEvidence"], "unsubscribe | spam_complaint | hard_bounce | manual | legal"),
+			field("source", "source", "string", true, undefined, ["complianceEvidence"]),
+			field("createdAt", "created_at", "timestamp", false, "now", ["operational"]),
+		],
+		indexes: [index("herald_suppression_lookup_idx", ["addressHash", "channel", "purpose"])],
+	},
+	{
+		id: "auditLogs",
+		tableName: "herald_audit_logs",
+		annotations: ["auditLog"],
+		fields: [
+			field("id", "id", "string", false, "generatedId", ["operational"]),
+			field("userId", "user_id", "string", true, undefined, ["subjectIdentifier"], "null for system actions (purge, compliance.erase, etc.)"),
+			field("action", "action", "string", false, undefined, ["operational"]),
+			field("eventType", "event_type", "string", true, undefined, ["operational"]),
+			field("deliveryId", "delivery_id", "string", true, undefined, ["operational"]),
+			field("metadata", "metadata", "json", true, undefined, ["auditMetadataNonPii"], "non-PII only"),
+			field("createdAt", "created_at", "timestamp", false, "now", ["operational"]),
+		],
+		indexes: [
+			index("herald_audit_user_idx", ["userId"]),
+			index("herald_audit_created_idx", ["createdAt"])
+		],
+	},
+] satisfies readonly DbTableMetadata[];
+
+export const HERALD_DB_SCHEMA: DbSchemaMetadata = {
+	version: 1,
+	tables,
+};
+
+function field(
+	propertyName: string,
+	columnName: string,
+	kind: "string" | "integer" | "boolean" | "timestamp" | "json",
+	nullable: boolean,
+	defaultKind: "generatedId" | "now" | "updatedAt" | "pending" | "zero" | "false" | undefined,
+	annotations: readonly DbPrivacyAnnotation[],
+	comment?: string,
+): DbFieldMetadata {
+	return {
+		propertyName,
+		columnName,
+		kind,
+		nullable,
+		primaryKey: propertyName === "id",
+		default: defaultKind,
+		annotations,
+		comment,
+	};
+}
+
+function index(
+	name: string,
+	fields: readonly string[],
+): DbIndexMetadata {
+	return {
+		name,
+		fields,
+	};
+}
