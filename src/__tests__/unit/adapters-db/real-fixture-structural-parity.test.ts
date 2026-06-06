@@ -1,11 +1,31 @@
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
+import { HERALD_DB_SCHEMA } from "../../../internal/db-schema/metadata.js";
 import type { DbSchemaMetadata } from "../../../internal/db-schema/types.js";
 import { compareFixtureToMetadata } from "../../helpers/database-adapter-real-targets/schema-parity/compare.js";
 import { normalizeHeraldDbSchema } from "../../helpers/database-adapter-real-targets/schema-parity/metadata.js";
+import { extractSqlFixtureSchema } from "../../helpers/database-adapter-real-targets/schema-parity/sql-fixture.js";
 import type { NormalizedFixtureSchema } from "../../helpers/database-adapter-real-targets/schema-parity/types.js";
 
+const sqlFixturePath = fileURLToPath(
+	new URL(
+		"../../helpers/database-adapter-real-targets/herald-schema.sql",
+		import.meta.url,
+	),
+);
+
 describe("real DB fixture structural parity", () => {
+	it("keeps the SQL real fixture aligned with HERALD_DB_SCHEMA structural metadata", async () => {
+		const expected = normalizeHeraldDbSchema(HERALD_DB_SCHEMA);
+		const actual = await extractSqlFixtureSchema(sqlFixturePath);
+
+		const diagnostics = compareFixtureToMetadata(expected, actual);
+
+		expect(diagnostics, diagnostics.join("\n\n")).toEqual([]);
+	});
+
 	it("throws when metadata indexes reference unknown table fields", () => {
 		const schema: DbSchemaMetadata = {
 			version: 1,

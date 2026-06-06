@@ -61,7 +61,7 @@ CREATE INDEX IF NOT EXISTS herald_delivery_user_idx               ON herald_deli
 CREATE INDEX IF NOT EXISTS herald_delivery_idempotency_idx        ON herald_deliveries (idempotency_key);
 CREATE INDEX IF NOT EXISTS herald_delivery_created_idx            ON herald_deliveries (created_at);
 CREATE INDEX IF NOT EXISTS herald_delivery_status_scheduled_idx   ON herald_deliveries (status, scheduled_at);
-CREATE INDEX IF NOT EXISTS herald_delivery_status_claim_exp_idx   ON herald_deliveries (status, claim_expires_at);
+CREATE INDEX IF NOT EXISTS herald_delivery_status_claim_expires_idx   ON herald_deliveries (status, claim_expires_at);
 CREATE INDEX IF NOT EXISTS herald_delivery_scheduled_idx          ON herald_deliveries (scheduled_at) WHERE status = 'scheduled';
 
 CREATE TABLE IF NOT EXISTS herald_consent_events (
