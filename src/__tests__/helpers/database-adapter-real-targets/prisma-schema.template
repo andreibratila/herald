@@ -6,6 +6,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["__DATABASE_SCHEMA__"]
 }
 
 model HeraldNotification {
@@ -25,6 +26,7 @@ model HeraldNotification {
   @@index([userId, createdAt], map: "herald_notif_user_created_idx")
   @@index([deliveryId], map: "herald_notif_delivery_idx")
   @@map("herald_notifications")
+  @@schema("__DATABASE_SCHEMA__")
 }
 
 model HeraldDelivery {
@@ -72,6 +74,7 @@ model HeraldDelivery {
   @@index([status, claimExpiresAt], map: "herald_delivery_status_claim_expires_idx")
   @@index([scheduledAt], where: { status: "scheduled" }, map: "herald_delivery_scheduled_idx")
   @@map("herald_deliveries")
+  @@schema("__DATABASE_SCHEMA__")
 }
 
 model HeraldConsentEvent {
@@ -94,6 +97,7 @@ model HeraldConsentEvent {
 
   @@index([subjectId, channel, purpose, createdAt], map: "herald_consent_event_scope_idx")
   @@map("herald_consent_events")
+  @@schema("__DATABASE_SCHEMA__")
 }
 
 model HeraldSuppression {
@@ -107,6 +111,7 @@ model HeraldSuppression {
 
   @@index([addressHash, channel, purpose], map: "herald_suppression_lookup_idx")
   @@map("herald_suppressions")
+  @@schema("__DATABASE_SCHEMA__")
 }
 
 model HeraldAuditLog {
@@ -121,4 +126,5 @@ model HeraldAuditLog {
   @@index([userId], map: "herald_audit_user_idx")
   @@index([createdAt], map: "herald_audit_created_idx")
   @@map("herald_audit_logs")
+  @@schema("__DATABASE_SCHEMA__")
 }

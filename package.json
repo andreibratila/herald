@@ -111,6 +111,7 @@
     }
   },
   "devDependencies": {
+    "@prisma/adapter-pg": "^7.4.0",
     "@prisma/client": "^7.4.0",
     "@sendgrid/mail": "^8.0.0",
     "@types/node": "^22.0.0",

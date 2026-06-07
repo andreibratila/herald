@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import { createPrismaAdapter } from "../../../adapters/db/prisma.js";
 import type { RealDbConformanceTarget, RealDbTargetContext } from "./target.js";
@@ -95,16 +96,13 @@ export function createPrismaRealConformanceTarget(
 			await testbed.truncateTables();
 
 			const users = createUserEmailStore();
-			const prismaModule = await loadGeneratedPrismaClient();
+			const prismaModule = await loadGeneratedPrismaClient(schema);
+			const prismaConnectionString = withSearchPath(
+				depoolNeonUrl(options.url),
+				schema,
+			);
 			const prisma = new prismaModule.PrismaClient({
-				datasources: {
-					db: {
-						url: withSearchPath(
-							withSchema(depoolNeonUrl(options.url), schema),
-							schema,
-						),
-					},
-				},
+				adapter: new PrismaPg({ connectionString: prismaConnectionString }),
 			});
 			const adapter = createPrismaAdapter(prisma, {
 				getUserEmail: (userId) => users.getUserEmail(userId),
@@ -152,27 +150,19 @@ export function createPrismaRealConformanceTarget(
 	};
 }
 
-async function loadGeneratedPrismaClient(): Promise<{
+async function loadGeneratedPrismaClient(schema: string): Promise<{
 	PrismaClient: new (...args: any[]) => any;
 }> {
 	if (!prismaClientModulePromise) {
 		prismaClientModulePromise = (async () => {
 			const schemaPath = join(__dirname, "prisma-schema.generated.prisma");
-			const databaseUrl = process.env.HERALD_DB_CONFORMANCE_URL?.trim();
-			if (!databaseUrl) {
-				throw new Error(
-					"HERALD_DB_CONFORMANCE_URL is required to generate Prisma conformance client.",
-				);
-			}
-
-			const schema = PRISMA_SCHEMA_TEMPLATE.replace(
-				"__DATABASE_URL__",
-				databaseUrl,
-			).replace(
+			const generatedSchema = PRISMA_SCHEMA_TEMPLATE.split(
+				"__DATABASE_SCHEMA__",
+			).join(schema).replace(
 				"__PRISMA_CLIENT_OUTPUT__",
 				PRISMA_CLIENT_OUTPUT.replace(/\\/g, "\\\\"),
 			);
-			await writeFile(schemaPath, schema, "utf8");
+			await writeFile(schemaPath, generatedSchema, "utf8");
 
 			try {
 				await execFileAsync("npx", [
@@ -208,12 +198,6 @@ async function loadGeneratedPrismaClient(): Promise<{
 	}
 
 	return prismaClientModulePromise;
-}
-
-function withSchema(url: string, schema: string): string {
-	const parsed = new URL(url);
-	parsed.searchParams.set("schema", schema);
-	return parsed.toString();
 }
 
 function withSearchPath(url: string, schema: string): string {
