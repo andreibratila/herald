@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 
 import type {
+	NormalizedColumnDefault,
+	NormalizedFixtureColumn,
 	NormalizedFixtureIndex,
 	NormalizedFixtureSchema,
 	NormalizedFixtureTable,
@@ -72,12 +74,12 @@ function stripLineComments(source: string): string {
 		.join("\n");
 }
 
-function extractTableColumns(tableBody: string): string[] {
+function extractTableColumns(tableBody: string): NormalizedFixtureColumn[] {
 	return tableBody
 		.split("\n")
 		.map((line) => line.trim().replace(/,$/u, ""))
 		.filter((line) => line.length > 0 && !isTableConstraint(line))
-		.map(firstToken);
+		.map(parseColumnLine);
 }
 
 function isTableConstraint(line: string): boolean {
@@ -123,11 +125,47 @@ function normalizePredicate(
 		: { field: predicateSource, equals: "<unsupported>" };
 }
 
-function firstToken(line: string): string {
-	const token = line.split(/\s+/u)[0];
-	if (!token)
-		throw new Error(`Unable to extract SQL column name from line: ${line}`);
-	return token;
+function parseColumnLine(line: string): NormalizedFixtureColumn {
+	const parts = line.split(/\s+/u);
+	const name = parts[0];
+	const type = parts[1];
+	if (!name || !type) {
+		throw new Error(`Unable to extract SQL column from line: ${line}`);
+	}
+	return {
+		name,
+		kind: normalizeSqlKind(type),
+		nullable: !/\bNOT\s+NULL\b/iu.test(line) && !/\bPRIMARY\s+KEY\b/iu.test(line),
+		primaryKey: /\bPRIMARY\s+KEY\b/iu.test(line),
+		default: normalizeSqlDefault(name, line),
+	};
+}
+
+function normalizeSqlKind(type: string): NormalizedFixtureColumn["kind"] {
+	const normalized = type.toUpperCase();
+	if (normalized === "TEXT") return "string";
+	if (normalized === "INTEGER") return "integer";
+	if (normalized === "BOOLEAN") return "boolean";
+	if (normalized === "JSONB" || normalized === "JSON") return "json";
+	if (normalized === "TIMESTAMPTZ" || normalized === "TIMESTAMP") return "timestamp";
+	throw new Error(`Unsupported SQL column type ${type}`);
+}
+
+function normalizeSqlDefault(
+	columnName: string,
+	line: string,
+): NormalizedColumnDefault {
+	const defaultMatch = /\bDEFAULT\s+([^\s,]+)/iu.exec(line);
+	const defaultSource = defaultMatch?.[1];
+	if (!defaultSource) return "none";
+	const value = defaultSource.replace(/[()]/gu, "").toLowerCase();
+	if (value === "now") return columnName === "updated_at" ? "updatedAt" : "now";
+	if (value === "'pending'") return "pending";
+	if (value === "0") return "zero";
+	if (value === "false") return "false";
+	throw new Error(
+		`Unsupported SQL default for column ${columnName}: ${defaultSource}`,
+	);
 }
 
 function requireMatchGroup(

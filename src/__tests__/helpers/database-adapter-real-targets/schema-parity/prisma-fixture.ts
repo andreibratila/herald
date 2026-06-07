@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 
 import type {
+	NormalizedColumnDefault,
+	NormalizedFixtureColumn,
 	NormalizedFixtureIndex,
 	NormalizedFixtureSchema,
 	NormalizedFixtureTable,
@@ -50,7 +52,17 @@ function normalizeModel(
 	return {
 		tableName,
 		columns: [...columnByProperty.values()],
-		indexes: extractIndexes(sourcePath, tableName, body, columnByProperty),
+		indexes: extractIndexes(
+			sourcePath,
+			tableName,
+			body,
+			new Map(
+				[...columnByProperty].map(([property, column]) => [
+					property,
+					column.name,
+				]),
+			),
+		),
 	};
 }
 
@@ -68,19 +80,50 @@ function extractTableName(
 	return requireMatchGroup(match, 1, `${sourcePath}: ${modelName} @@map`);
 }
 
-function extractColumns(body: string): Map<string, string> {
-	const columns = new Map<string, string>();
+function extractColumns(body: string): Map<string, NormalizedFixtureColumn> {
+	const columns = new Map<string, NormalizedFixtureColumn>();
 	for (const line of body.split("\n")) {
 		const trimmed = line.trim();
 		if (!trimmed || trimmed.startsWith("//") || trimmed.startsWith("@@")) {
 			continue;
 		}
-		const [propertyName] = trimmed.split(/\s+/u);
-		if (!propertyName) continue;
+		const [propertyName, typeName] = trimmed.split(/\s+/u);
+		if (!propertyName || !typeName) continue;
 		const mapMatch = FIELD_MAP_PATTERN.exec(trimmed);
-		columns.set(propertyName, mapMatch?.[1] ?? propertyName);
+		columns.set(propertyName, {
+			name: mapMatch?.[1] ?? propertyName,
+			kind: normalizePrismaKind(typeName),
+			nullable: typeName.endsWith("?"),
+			primaryKey: trimmed.includes("@id"),
+			default: normalizePrismaDefault(trimmed),
+		});
 	}
 	return columns;
+}
+
+function normalizePrismaKind(typeName: string): NormalizedFixtureColumn["kind"] {
+	const normalized = typeName.replace(/\?$/u, "");
+	if (normalized === "String") return "string";
+	if (normalized === "Int") return "integer";
+	if (normalized === "Boolean") return "boolean";
+	if (normalized === "Json") return "json";
+	if (normalized === "DateTime") return "timestamp";
+	throw new Error(`Unsupported Prisma field type ${typeName}`);
+}
+
+function normalizePrismaDefault(line: string): NormalizedColumnDefault {
+	if (line.includes("@updatedAt")) return "updatedAt";
+	if (line.includes("@default(now())")) return "now";
+	if (/@default\(\s*"pending"\s*\)/u.test(line)) return "pending";
+	if (/@default\(\s*0\s*\)/u.test(line)) return "zero";
+	if (/@default\(\s*false\s*\)/u.test(line)) return "false";
+	const unsupportedDefault = /@default\(([^)]*)\)/u.exec(line)?.[1];
+	if (unsupportedDefault !== undefined) {
+		throw new Error(
+			`Unsupported Prisma default for field ${line.split(/\s+/u)[0]}: ${unsupportedDefault}`,
+		);
+	}
+	return "none";
 }
 
 function extractIndexes(

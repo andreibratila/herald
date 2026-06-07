@@ -1,4 +1,5 @@
 import type {
+	NormalizedFixtureColumn,
 	NormalizedFixtureIndex,
 	NormalizedFixtureSchema,
 	NormalizedFixtureTable,
@@ -64,29 +65,42 @@ function compareColumns(
 	actualTable: NormalizedFixtureTable,
 ): string[] {
 	const diagnostics: string[] = [];
-	const expected = new Set(expectedTable.columns);
-	const actual = new Set(actualTable.columns);
+	const expected = mapBy(expectedTable.columns, (column) => column.name);
+	const actual = mapBy(actualTable.columns, (column) => column.name);
 
-	for (const column of [...expected].sort()) {
-		if (!actual.has(column)) {
+	for (const columnName of sortedKeys(expected)) {
+		const expectedColumn = expected.get(columnName);
+		const actualColumn = actual.get(columnName);
+		if (!expectedColumn) continue;
+		if (!actualColumn) {
 			diagnostics.push(
 				diagnostic(
 					sourcePath,
-					`table ${expectedTable.tableName} missing column ${column}`,
-					column,
+					`table ${expectedTable.tableName} missing column ${columnName}`,
+					formatColumn(expectedColumn),
 					"<missing>",
 				),
 			);
+			continue;
 		}
+		diagnostics.push(
+			...compareColumnAttributes(
+				sourcePath,
+				expectedTable.tableName,
+				expectedColumn,
+				actualColumn,
+			),
+		);
 	}
-	for (const column of [...actual].sort()) {
-		if (!expected.has(column)) {
+	for (const columnName of sortedKeys(actual)) {
+		const actualColumn = actual.get(columnName);
+		if (actualColumn && !expected.has(columnName)) {
 			diagnostics.push(
 				diagnostic(
 					sourcePath,
-					`table ${expectedTable.tableName} extra column ${column}`,
+					`table ${expectedTable.tableName} extra column ${columnName}`,
 					"<missing>",
-					column,
+					formatColumn(actualColumn),
 				),
 			);
 		}
@@ -180,6 +194,56 @@ function compareIndexes(
 	return diagnostics;
 }
 
+function compareColumnAttributes(
+	sourcePath: string,
+	tableName: string,
+	expected: NormalizedFixtureColumn,
+	actual: NormalizedFixtureColumn,
+): string[] {
+	const diagnostics: string[] = [];
+	if (actual.kind !== expected.kind) {
+		diagnostics.push(
+			diagnostic(
+				sourcePath,
+				`table ${tableName} column ${expected.name} has incorrect kind`,
+				expected.kind,
+				actual.kind,
+			),
+		);
+	}
+	if (actual.nullable !== expected.nullable) {
+		diagnostics.push(
+			diagnostic(
+				sourcePath,
+				`table ${tableName} column ${expected.name} has incorrect nullability`,
+				formatBoolean(expected.nullable),
+				formatBoolean(actual.nullable),
+			),
+		);
+	}
+	if (actual.primaryKey !== expected.primaryKey) {
+		diagnostics.push(
+			diagnostic(
+				sourcePath,
+				`table ${tableName} column ${expected.name} has incorrect primary key flag`,
+				formatBoolean(expected.primaryKey),
+				formatBoolean(actual.primaryKey),
+			),
+		);
+	}
+	if (actual.default !== expected.default) {
+		diagnostics.push(
+			diagnostic(
+				sourcePath,
+				`table ${tableName} column ${expected.name} has incorrect default`,
+				expected.default,
+				actual.default,
+			),
+		);
+	}
+	return diagnostics;
+}
+
 function diagnostic(
 	sourcePath: string,
 	title: string,
@@ -198,12 +262,20 @@ function findIndexByName(
 		.find((index) => index.name === indexName);
 }
 
+function formatColumn(column: NormalizedFixtureColumn): string {
+	return `${column.name} ${column.kind} nullable=${formatBoolean(column.nullable)} primaryKey=${formatBoolean(column.primaryKey)} default=${column.default}`;
+}
+
 function formatIndex(index: NormalizedFixtureIndex): string {
 	return `table ${index.tableName}, columns(${index.columns.join(", ")}), predicate ${formatPredicate(index.where)}`;
 }
 
 function formatPredicate(predicate: NormalizedFixtureIndex["where"]): string {
 	return predicate ? `${predicate.field} = '${predicate.equals}'` : "<none>";
+}
+
+function formatBoolean(value: boolean): string {
+	return value ? "true" : "false";
 }
 
 function mapBy<T>(

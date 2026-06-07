@@ -35,8 +35,8 @@ model HeraldDelivery {
   eventType                          String    @map("event_type")
   templateName                       String    @map("template_name")
   channel                            String
-  status                             String
-  attempts                           Int
+  status                             String    @default("pending")
+  attempts                           Int       @default(0)
   lastError                          String?   @map("last_error")
   externalId                         String?   @map("external_id")
   idempotencyKey                     String?   @map("idempotency_key")
@@ -46,9 +46,9 @@ model HeraldDelivery {
   claimedAt                          DateTime? @db.Timestamptz(6) @map("claimed_at")
   claimExpiresAt                     DateTime? @db.Timestamptz(6) @map("claim_expires_at")
   claimedBy                          String?   @map("claimed_by")
-  resolveAttempts                    Int       @map("resolve_attempts")
+  resolveAttempts                    Int       @default(0) @map("resolve_attempts")
   queueJobId                         String?   @map("queue_job_id")
-  bypassComplianceCheck              Boolean   @map("bypass_compliance_check")
+  bypassComplianceCheck              Boolean   @default(false) @map("bypass_compliance_check")
   sideEffectsCompletedAt             DateTime? @db.Timestamptz(6) @map("side_effects_completed_at")
   renderedHash                       String?   @map("rendered_hash")
   addressHash                        String?   @map("address_hash")

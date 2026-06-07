@@ -15,8 +15,14 @@ import {
 	extractPrismaFixtureSchema,
 	extractPrismaFixtureSchemaFromSource,
 } from "../../helpers/database-adapter-real-targets/schema-parity/prisma-fixture.js";
-import { extractSqlFixtureSchema } from "../../helpers/database-adapter-real-targets/schema-parity/sql-fixture.js";
-import type { NormalizedFixtureSchema } from "../../helpers/database-adapter-real-targets/schema-parity/types.js";
+import {
+	extractSqlFixtureSchema,
+	extractSqlFixtureSchemaFromSource,
+} from "../../helpers/database-adapter-real-targets/schema-parity/sql-fixture.js";
+import type {
+	NormalizedFixtureColumn,
+	NormalizedFixtureSchema,
+} from "../../helpers/database-adapter-real-targets/schema-parity/types.js";
 
 const sqlFixturePath = fileURLToPath(
 	new URL(
@@ -106,11 +112,116 @@ describe("real DB fixture structural parity", () => {
 		);
 	});
 
+	it("throws when SQL fixture columns use unsupported defaults", () => {
+		const source = `
+			CREATE TABLE IF NOT EXISTS herald_deliveries (
+				id TEXT PRIMARY KEY DEFAULT gen_random_uuid()
+			);
+		`;
+
+		expect(() =>
+			extractSqlFixtureSchemaFromSource("herald-schema.sql", source),
+		).toThrow(
+			"Unsupported SQL default for column id: gen_random_uuid()",
+		);
+	});
+
+	it("throws when Drizzle fixture columns use unsupported defaults", () => {
+		const source = `
+			export const deliveries = pgTable("herald_deliveries", {
+				status: text("status").notNull().default("queued"),
+			});
+		`;
+
+		expect(() =>
+			extractDrizzleFixtureSchemaFromSource("drizzle-schema.ts", source),
+		).toThrow(
+			'Unsupported Drizzle default for column status: "queued"',
+		);
+	});
+
+	it("throws when Prisma fixture columns use unsupported defaults", () => {
+		const source = `
+			model HeraldDelivery {
+				id String @id @default(cuid())
+				@@map("herald_deliveries")
+			}
+		`;
+
+		expect(() =>
+			extractPrismaFixtureSchemaFromSource("prisma-schema.template", source),
+		).toThrow("Unsupported Prisma default for field id: cuid(");
+	});
+
+	it("reports column kind, nullability, primary key, and default drift", () => {
+		const expected = fixtureSchema("HERALD_DB_SCHEMA", [
+			{
+				tableName: "herald_deliveries",
+				columns: [
+					{
+						name: "id",
+						kind: "string",
+						nullable: false,
+						primaryKey: true,
+						default: "none",
+					},
+					{
+						name: "attempts",
+						kind: "integer",
+						nullable: false,
+						primaryKey: false,
+						default: "zero",
+					},
+				],
+				indexes: [],
+			},
+		]);
+		const actual = fixtureSchema("fixture.sql", [
+			{
+				tableName: "herald_deliveries",
+				columns: [
+					{
+						name: "id",
+						kind: "integer",
+						nullable: true,
+						primaryKey: false,
+						default: "none",
+					},
+					{
+						name: "attempts",
+						kind: "integer",
+						nullable: false,
+						primaryKey: false,
+						default: "none",
+					},
+				],
+				indexes: [],
+			},
+		]);
+
+		const diagnostics = compareFixtureToMetadata(expected, actual).join("\n\n");
+
+		expect(diagnostics).toContain(
+			"table herald_deliveries column id has incorrect kind",
+		);
+		expect(diagnostics).toContain(
+			"table herald_deliveries column id has incorrect nullability",
+		);
+		expect(diagnostics).toContain(
+			"table herald_deliveries column id has incorrect primary key flag",
+		);
+		expect(diagnostics).toContain(
+			"table herald_deliveries column attempts has incorrect default",
+		);
+		expect(diagnostics).toContain("expected metadata value: zero");
+		expect(diagnostics).toContain("actual fixture value: none");
+	});
+
 	it("reports index table association drift", () => {
 		const expected = fixtureSchema("HERALD_DB_SCHEMA", [
 			{
 				tableName: "herald_deliveries",
-				columns: ["id", "status", "scheduled_at"],
+				columns: testColumns("id", "status", "scheduled_at"),
 				indexes: [
 					{
 						name: "herald_delivery_scheduled_idx",
@@ -124,7 +235,7 @@ describe("real DB fixture structural parity", () => {
 		const actual = fixtureSchema("drizzle-schema.ts", [
 			{
 				tableName: "herald_deliveries",
-				columns: ["id", "status", "scheduled_at"],
+				columns: testColumns("id", "status", "scheduled_at"),
 				indexes: [],
 			},
 			{
@@ -158,7 +269,7 @@ describe("real DB fixture structural parity", () => {
 		const expected = fixtureSchema("HERALD_DB_SCHEMA", [
 			{
 				tableName: "herald_deliveries",
-				columns: ["id", "status", "scheduled_at"],
+				columns: testColumns("id", "status", "scheduled_at"),
 				indexes: [
 					{
 						name: "herald_delivery_scheduled_idx",
@@ -172,7 +283,7 @@ describe("real DB fixture structural parity", () => {
 		const actual = fixtureSchema("drizzle-schema.ts", [
 			{
 				tableName: "herald_deliveries",
-				columns: ["id", "status", "scheduled_at"],
+				columns: testColumns("id", "status", "scheduled_at"),
 				indexes: [
 					{
 						name: "herald_delivery_scheduled_idx",
@@ -240,7 +351,7 @@ describe("real DB fixture structural parity", () => {
 		const expected = fixtureSchema("HERALD_DB_SCHEMA", [
 			{
 				tableName: "herald_deliveries",
-				columns: ["id"],
+				columns: testColumns("id"),
 				indexes: [
 					{
 						name: "herald_delivery_status_claim_expires_idx",
@@ -255,7 +366,7 @@ describe("real DB fixture structural parity", () => {
 			[
 				{
 					tableName: "herald_deliveries",
-					columns: ["id", "legacy_column"],
+					columns: testColumns("id", "legacy_column"),
 					indexes: [
 						{
 							name: "herald_delivery_status_claim_exp_idx",
@@ -291,4 +402,14 @@ function fixtureSchema(
 	tables: NormalizedFixtureSchema["tables"],
 ): NormalizedFixtureSchema {
 	return { sourcePath, tables };
+}
+
+function testColumns(...names: string[]): NormalizedFixtureColumn[] {
+	return names.map((name) => ({
+		name,
+		kind: "string",
+		nullable: false,
+		primaryKey: false,
+		default: "none",
+	}));
 }

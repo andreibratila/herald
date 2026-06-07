@@ -1,13 +1,15 @@
 import { readFile } from "node:fs/promises";
 
 import type {
+	NormalizedColumnDefault,
+	NormalizedFixtureColumn,
 	NormalizedFixtureIndex,
 	NormalizedFixtureSchema,
 	NormalizedFixtureTable,
 } from "./types.js";
 
 const COLUMN_PATTERN =
-	/(\w+)\s*:\s*(?:text|integer|boolean|jsonb|timestamp|timestamptz)\s*\(\s*"([^"]+)"/gu;
+	/^(\w+)\s*:\s*(\w+)\s*\(\s*"([^"]+)"/su;
 const INDEX_PATTERN =
 	/index\s*\(\s*"([^"]+)"\s*\)\s*\.on\s*\(([\s\S]*?)\)\s*(?:\.where\s*\(\s*sql`([^`]*)`\s*\))?/gu;
 const SIMPLE_EQUALITY_PREDICATE = /^(\w+)\s*=\s*'([^']+)'$/u;
@@ -65,7 +67,17 @@ function normalizePgTableCall(
 		tableName,
 		columns: [...columnsByProperty.values()],
 		indexes: indexesArg
-			? extractIndexes(sourcePath, tableName, indexesArg, columnsByProperty)
+			? extractIndexes(
+					sourcePath,
+					tableName,
+					indexesArg,
+					new Map(
+						[...columnsByProperty].map(([property, column]) => [
+							property,
+							column.name,
+						]),
+					),
+				)
 			: [],
 	};
 }
@@ -74,17 +86,34 @@ function extractColumns(
 	sourcePath: string,
 	tableName: string,
 	columnsSource: string,
-): Map<string, string> {
-	const columns = new Map<string, string>();
-	for (const match of columnsSource.matchAll(COLUMN_PATTERN)) {
-		columns.set(
-			requireMatchGroup(
-				match,
-				1,
-				`${sourcePath}: ${tableName} column property`,
-			),
-			requireMatchGroup(match, 2, `${sourcePath}: ${tableName} column name`),
+): Map<string, NormalizedFixtureColumn> {
+	const columns = new Map<string, NormalizedFixtureColumn>();
+	const body = columnsSource.trim().replace(/^\{/u, "").replace(/\}$/u, "");
+	for (const entry of splitTopLevelArgs(body)) {
+		const match = COLUMN_PATTERN.exec(entry.trim());
+		if (!match) continue;
+		const propertyName = requireMatchGroup(
+			match,
+			1,
+			`${sourcePath}: ${tableName} column property`,
 		);
+		const constructorName = requireMatchGroup(
+			match,
+			2,
+			`${sourcePath}: ${tableName}.${propertyName} column constructor`,
+		);
+		const columnName = requireMatchGroup(
+			match,
+			3,
+			`${sourcePath}: ${tableName}.${propertyName} column name`,
+		);
+		columns.set(propertyName, {
+			name: columnName,
+			kind: normalizeDrizzleKind(constructorName),
+			nullable: !entry.includes(".notNull()") && !entry.includes(".primaryKey()"),
+			primaryKey: entry.includes(".primaryKey()"),
+			default: normalizeDrizzleDefault(columnName, entry),
+		});
 	}
 	if (columns.size === 0) {
 		throw new Error(
@@ -92,6 +121,38 @@ function extractColumns(
 		);
 	}
 	return columns;
+}
+
+function normalizeDrizzleKind(
+	constructorName: string,
+): NormalizedFixtureColumn["kind"] {
+	if (constructorName === "text") return "string";
+	if (constructorName === "integer") return "integer";
+	if (constructorName === "boolean") return "boolean";
+	if (constructorName === "jsonb") return "json";
+	if (constructorName === "timestamp" || constructorName === "timestamptz") {
+		return "timestamp";
+	}
+	throw new Error(`Unsupported Drizzle column constructor ${constructorName}`);
+}
+
+function normalizeDrizzleDefault(
+	columnName: string,
+	entry: string,
+): NormalizedColumnDefault {
+	if (entry.includes(".defaultNow()")) {
+		return columnName === "updated_at" ? "updatedAt" : "now";
+	}
+	if (/\.default\(\s*"pending"\s*\)/u.test(entry)) return "pending";
+	if (/\.default\(\s*0\s*\)/u.test(entry)) return "zero";
+	if (/\.default\(\s*false\s*\)/u.test(entry)) return "false";
+	const unsupportedDefault = /\.default\(([^)]*)\)/u.exec(entry)?.[1];
+	if (unsupportedDefault !== undefined) {
+		throw new Error(
+			`Unsupported Drizzle default for column ${columnName}: ${unsupportedDefault}`,
+		);
+	}
+	return "none";
 }
 
 function extractIndexes(

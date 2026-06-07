@@ -23,7 +23,13 @@ function normalizeTable(table: DbTableMetadata): NormalizedFixtureTable {
 
 	return {
 		tableName: table.tableName,
-		columns: table.fields.map((field) => field.columnName),
+		columns: table.fields.map((field) => ({
+			name: field.columnName,
+			kind: field.kind,
+			nullable: field.nullable,
+			primaryKey: field.primaryKey ?? false,
+			default: normalizeMetadataDefault(field.default),
+		})),
 		indexes: table.indexes.map((index) => ({
 			name: index.name,
 			tableName: table.tableName,
@@ -50,6 +56,13 @@ function normalizeTable(table: DbTableMetadata): NormalizedFixtureTable {
 				: {}),
 		})),
 	};
+}
+
+function normalizeMetadataDefault(
+	defaultKind: DbTableMetadata["fields"][number]["default"],
+): "none" | "now" | "pending" | "zero" | "false" | "updatedAt" {
+	if (!defaultKind || defaultKind === "generatedId") return "none";
+	return defaultKind;
 }
 
 function lookupColumnName(
