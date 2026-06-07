@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -10,6 +11,10 @@ import {
 	extractDrizzleFixtureSchemaFromSource,
 } from "../../helpers/database-adapter-real-targets/schema-parity/drizzle-fixture.js";
 import { normalizeHeraldDbSchema } from "../../helpers/database-adapter-real-targets/schema-parity/metadata.js";
+import {
+	extractPrismaFixtureSchema,
+	extractPrismaFixtureSchemaFromSource,
+} from "../../helpers/database-adapter-real-targets/schema-parity/prisma-fixture.js";
 import { extractSqlFixtureSchema } from "../../helpers/database-adapter-real-targets/schema-parity/sql-fixture.js";
 import type { NormalizedFixtureSchema } from "../../helpers/database-adapter-real-targets/schema-parity/types.js";
 
@@ -22,6 +27,12 @@ const sqlFixturePath = fileURLToPath(
 const drizzleFixturePath = fileURLToPath(
 	new URL(
 		"../../helpers/database-adapter-real-targets/drizzle-schema.ts",
+		import.meta.url,
+	),
+);
+const prismaFixturePath = fileURLToPath(
+	new URL(
+		"../../helpers/database-adapter-real-targets/prisma-schema.template",
 		import.meta.url,
 	),
 );
@@ -43,6 +54,26 @@ describe("real DB fixture structural parity", () => {
 		const diagnostics = compareFixtureToMetadata(expected, actual);
 
 		expect(diagnostics, diagnostics.join("\n\n")).toEqual([]);
+	});
+
+	it("keeps the Prisma real fixture aligned with HERALD_DB_SCHEMA structural metadata", async () => {
+		const expected = normalizeHeraldDbSchema(HERALD_DB_SCHEMA);
+		const actual = await extractPrismaFixtureSchema(prismaFixturePath);
+
+		const diagnostics = compareFixtureToMetadata(expected, actual);
+
+		expect(diagnostics, diagnostics.join("\n\n")).toEqual([]);
+	});
+
+	it("keeps the Prisma real fixture updatedAt field on Prisma @updatedAt semantics", () => {
+		const source = readFileSync(prismaFixturePath, "utf8");
+
+		expect(source).toContain(
+			'updatedAt                          DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")',
+		);
+		expect(source).not.toContain(
+			'updatedAt                          DateTime  @default(now()) @db.Timestamptz(6) @map("updated_at")',
+		);
 	});
 
 	it("throws when metadata indexes reference unknown table fields", () => {
@@ -115,8 +146,12 @@ describe("real DB fixture structural parity", () => {
 		expect(diagnostics).toContain(
 			"index herald_delivery_scheduled_idx has incorrect table association",
 		);
-		expect(diagnostics).toContain("expected metadata value: table herald_deliveries");
-		expect(diagnostics).toContain("actual fixture value: table herald_notifications");
+		expect(diagnostics).toContain(
+			"expected metadata value: table herald_deliveries",
+		);
+		expect(diagnostics).toContain(
+			"actual fixture value: table herald_notifications",
+		);
 	});
 
 	it("reports index field order and predicate drift", () => {
@@ -154,12 +189,18 @@ describe("real DB fixture structural parity", () => {
 		expect(diagnostics).toContain(
 			"index herald_delivery_scheduled_idx has incorrect field order",
 		);
-		expect(diagnostics).toContain("expected metadata value: columns(status, scheduled_at)");
-		expect(diagnostics).toContain("actual fixture value: columns(scheduled_at, status)");
+		expect(diagnostics).toContain(
+			"expected metadata value: columns(status, scheduled_at)",
+		);
+		expect(diagnostics).toContain(
+			"actual fixture value: columns(scheduled_at, status)",
+		);
 		expect(diagnostics).toContain(
 			"index herald_delivery_scheduled_idx has incorrect predicate",
 		);
-		expect(diagnostics).toContain("expected metadata value: status = 'scheduled'");
+		expect(diagnostics).toContain(
+			"expected metadata value: status = 'scheduled'",
+		);
 		expect(diagnostics).toContain("actual fixture value: status = 'queued'");
 	});
 
@@ -176,6 +217,22 @@ describe("real DB fixture structural parity", () => {
 			extractDrizzleFixtureSchemaFromSource("drizzle-schema.ts", source),
 		).toThrow(
 			"drizzle-schema.ts: index herald_delivery_unknown_idx on herald_deliveries references unknown Drizzle field/property missingProperty",
+		);
+	});
+
+	it("throws when Prisma indexes reference unknown model fields", () => {
+		const source = `
+			model HeraldDelivery {
+				status String
+				@@index([missingProperty], map: "herald_delivery_unknown_idx")
+				@@map("herald_deliveries")
+			}
+		`;
+
+		expect(() =>
+			extractPrismaFixtureSchemaFromSource("prisma-schema.template", source),
+		).toThrow(
+			"prisma-schema.template: index herald_delivery_unknown_idx on herald_deliveries references unknown Prisma field/property missingProperty",
 		);
 	});
 

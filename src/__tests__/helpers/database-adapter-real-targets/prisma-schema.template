@@ -1,11 +1,11 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "__PRISMA_CLIENT_OUTPUT__"
+  provider        = "prisma-client-js"
+  output          = "__PRISMA_CLIENT_OUTPUT__"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
   provider = "postgresql"
-  url      = "__DATABASE_URL__"
 }
 
 model HeraldNotification {
@@ -21,6 +21,9 @@ model HeraldNotification {
   readAt       DateTime? @db.Timestamptz(6) @map("read_at")
   createdAt    DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
 
+  @@index([userId, readAt], map: "herald_notif_user_read_idx")
+  @@index([userId, createdAt], map: "herald_notif_user_created_idx")
+  @@index([deliveryId], map: "herald_notif_delivery_idx")
   @@map("herald_notifications")
 }
 
@@ -60,8 +63,14 @@ model HeraldDelivery {
   complianceDecision                 String?   @map("compliance_decision")
   complianceCheckedAt                DateTime? @db.Timestamptz(6) @map("compliance_checked_at")
   createdAt                          DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
-  updatedAt                          DateTime  @default(now()) @db.Timestamptz(6) @map("updated_at")
+  updatedAt                          DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
 
+  @@index([userId], map: "herald_delivery_user_idx")
+  @@index([idempotencyKey], map: "herald_delivery_idempotency_idx")
+  @@index([createdAt], map: "herald_delivery_created_idx")
+  @@index([status, scheduledAt], map: "herald_delivery_status_scheduled_idx")
+  @@index([status, claimExpiresAt], map: "herald_delivery_status_claim_expires_idx")
+  @@index([scheduledAt], where: { status: "scheduled" }, map: "herald_delivery_scheduled_idx")
   @@map("herald_deliveries")
 }
 
@@ -83,6 +92,7 @@ model HeraldConsentEvent {
   metadata             Json?
   createdAt            DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
 
+  @@index([subjectId, channel, purpose, createdAt], map: "herald_consent_event_scope_idx")
   @@map("herald_consent_events")
 }
 
@@ -95,6 +105,7 @@ model HeraldSuppression {
   source      String?
   createdAt   DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
 
+  @@index([addressHash, channel, purpose], map: "herald_suppression_lookup_idx")
   @@map("herald_suppressions")
 }
 
@@ -107,5 +118,7 @@ model HeraldAuditLog {
   metadata   Json?
   createdAt  DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
 
+  @@index([userId], map: "herald_audit_user_idx")
+  @@index([createdAt], map: "herald_audit_created_idx")
   @@map("herald_audit_logs")
 }
