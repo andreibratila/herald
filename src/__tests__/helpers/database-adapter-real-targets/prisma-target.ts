@@ -10,6 +10,7 @@ import { createPrismaAdapter } from "../../../adapters/db/prisma.js";
 import type { RealDbConformanceTarget, RealDbTargetContext } from "./target.js";
 import { createRealDbConformanceHelpers } from "./target.js";
 import {
+	cleanupAfterCreateFailure,
 	createPostgresTestbed,
 	createSchemaName,
 	type SqlExecutor,
@@ -26,8 +27,7 @@ const PRISMA_SCHEMA_TEMPLATE = readFileSync(
 	join(__dirname, "prisma-schema.template"),
 	"utf8",
 );
-const PRISMA_CLIENT_OUTPUT = join(__dirname, "prisma-generated-client");
-const PRISMA_CLIENT_ENTRY = join(PRISMA_CLIENT_OUTPUT, "index.js");
+const PRISMA_CLIENT_OUTPUT_ROOT = join(__dirname, "prisma-generated-client");
 
 const HERALD_TABLES = [
 	"herald_notifications",
@@ -61,9 +61,14 @@ export interface PrismaRealTargetOptions {
 	keepSchema?: boolean;
 }
 
-let prismaClientModulePromise: Promise<{
+type GeneratedPrismaClientModule = {
 	PrismaClient: new (...args: any[]) => any;
-}> | null = null;
+};
+
+const prismaClientModulePromises = new Map<
+	string,
+	Promise<GeneratedPrismaClientModule>
+>();
 
 export function createPrismaRealConformanceTarget(
 	options: PrismaRealTargetOptions,
@@ -82,42 +87,58 @@ export function createPrismaRealConformanceTarget(
 			const adminPool = new Pool({
 				connectionString: depoolNeonUrl(options.url),
 			});
-			const adminClient = await adminPool.connect();
-			const executor = new PgSqlExecutor(adminClient);
-			const testbed = createPostgresTestbed({
-				executor,
-				schema,
-				schemaSql: HERALD_SCHEMA_SQL,
-				tables: [...HERALD_TABLES],
-			});
-			await testbed.createSchema();
-			await testbed.applySchemaFixture();
-			await testbed.assertSearchPath();
-			await testbed.truncateTables();
+			let adminClient: PoolClient | null = null;
+			let testbed: ReturnType<typeof createPostgresTestbed> | null = null;
+			let prisma: any = null;
 
-			const users = createUserEmailStore();
-			const prismaModule = await loadGeneratedPrismaClient(schema);
-			const prismaConnectionString = withSearchPath(
-				depoolNeonUrl(options.url),
-				schema,
-			);
-			const prisma = new prismaModule.PrismaClient({
-				adapter: new PrismaPg({ connectionString: prismaConnectionString }),
-			});
-			const adapter = createPrismaAdapter(prisma, {
-				getUserEmail: (userId) => users.getUserEmail(userId),
-			});
-			return {
-				adapter,
-				context: {
-					schema,
+			try {
+				adminClient = await adminPool.connect();
+				const executor = new PgSqlExecutor(adminClient);
+				testbed = createPostgresTestbed({
 					executor,
-					users,
-					adminPool,
-					adminClient,
-					prisma,
-				},
-			};
+					schema,
+					schemaSql: HERALD_SCHEMA_SQL,
+					tables: [...HERALD_TABLES],
+				});
+				await testbed.createSchema();
+				await testbed.applySchemaFixture();
+				await testbed.assertSearchPath();
+				await testbed.truncateTables();
+
+				const users = createUserEmailStore();
+				const prismaModule = await loadGeneratedPrismaClient(schema);
+				const prismaConnectionString = withSearchPath(
+					depoolNeonUrl(options.url),
+					schema,
+				);
+				prisma = new prismaModule.PrismaClient({
+					adapter: new PrismaPg({ connectionString: prismaConnectionString }),
+				});
+				const adapter = createPrismaAdapter(prisma, {
+					getUserEmail: (userId) => users.getUserEmail(userId),
+				});
+				return {
+					adapter,
+					context: {
+						schema,
+						executor,
+						users,
+						adminPool,
+						adminClient,
+						prisma,
+					},
+				};
+			} catch (error) {
+				return cleanupAfterCreateFailure(error, () =>
+					cleanupPrismaCreateFailure({
+						adminPool,
+						adminClient,
+						keepSchema: options.keepSchema,
+						prisma,
+						testbed,
+					}),
+				);
+			}
 		},
 		async reset(context) {
 			const testbed = createPostgresTestbed({
@@ -150,56 +171,80 @@ export function createPrismaRealConformanceTarget(
 	};
 }
 
-async function loadGeneratedPrismaClient(schema: string): Promise<{
-	PrismaClient: new (...args: any[]) => any;
-}> {
-	if (!prismaClientModulePromise) {
-		prismaClientModulePromise = (async () => {
-			const schemaPath = join(__dirname, "prisma-schema.generated.prisma");
-			const generatedSchema = PRISMA_SCHEMA_TEMPLATE.split(
-				"__DATABASE_SCHEMA__",
-			)
-				.join(schema)
-				.replace(
-					"__PRISMA_CLIENT_OUTPUT__",
-					PRISMA_CLIENT_OUTPUT.replace(/\\/g, "\\\\"),
-				);
-			await writeFile(schemaPath, generatedSchema, "utf8");
+async function loadGeneratedPrismaClient(
+	schema: string,
+): Promise<GeneratedPrismaClientModule> {
+	const cached = prismaClientModulePromises.get(schema);
+	if (cached) return cached;
 
-			try {
-				await execFileAsync("npx", [
-					"prisma",
-					"generate",
-					"--schema",
-					schemaPath,
-				]);
-			} catch (error) {
-				const reason = error instanceof Error ? error.message : String(error);
-				throw new Error(
-					"Failed to generate Prisma conformance client. Install prisma/@prisma/client and run: npx prisma generate --schema <schema>. Reason: " +
-						reason,
-				);
-			} finally {
-				await rm(schemaPath, { force: true });
-			}
+	const promise = generateAndImportPrismaClient(schema);
+	prismaClientModulePromises.set(schema, promise);
+	promise.catch(() => {
+		prismaClientModulePromises.delete(schema);
+	});
+	return promise;
+}
 
-			try {
-				return (await import(pathToFileURL(PRISMA_CLIENT_ENTRY).href)) as {
-					PrismaClient: new (...args: any[]) => any;
-				};
-			} catch (error) {
-				const reason = error instanceof Error ? error.message : String(error);
-				throw new Error(
-					"Failed to import generated Prisma conformance client at " +
-						PRISMA_CLIENT_ENTRY +
-						". Reason: " +
-						reason,
-				);
-			}
-		})();
+async function generateAndImportPrismaClient(
+	schema: string,
+): Promise<GeneratedPrismaClientModule> {
+	const clientOutput = join(PRISMA_CLIENT_OUTPUT_ROOT, schema);
+	const clientEntry = join(clientOutput, "index.js");
+	const schemaPath = join(
+		__dirname,
+		`prisma-schema.${schema}.generated.prisma`,
+	);
+	const generatedSchema = PRISMA_SCHEMA_TEMPLATE.split("__DATABASE_SCHEMA__")
+		.join(schema)
+		.replace("__PRISMA_CLIENT_OUTPUT__", clientOutput.replace(/\\/g, "\\\\"));
+	await writeFile(schemaPath, generatedSchema, "utf8");
+
+	try {
+		await execFileAsync("npx", ["prisma", "generate", "--schema", schemaPath]);
+	} catch (error) {
+		const reason = error instanceof Error ? error.message : String(error);
+		throw new Error(
+			"Failed to generate Prisma conformance client. Install prisma/@prisma/client and run: npx prisma generate --schema <schema>. Reason: " +
+				reason,
+		);
+	} finally {
+		await rm(schemaPath, { force: true });
 	}
 
-	return prismaClientModulePromise;
+	try {
+		return (await import(
+			pathToFileURL(clientEntry).href
+		)) as GeneratedPrismaClientModule;
+	} catch (error) {
+		const reason = error instanceof Error ? error.message : String(error);
+		throw new Error(
+			"Failed to import generated Prisma conformance client at " +
+				clientEntry +
+				". Reason: " +
+				reason,
+		);
+	}
+}
+
+async function cleanupPrismaCreateFailure(args: {
+	adminPool: Pool;
+	adminClient: PoolClient | null;
+	keepSchema?: boolean;
+	prisma: any;
+	testbed: ReturnType<typeof createPostgresTestbed> | null;
+}): Promise<void> {
+	try {
+		await args.prisma?.$disconnect();
+	} finally {
+		try {
+			if (!args.keepSchema && args.testbed) {
+				await args.testbed.dropSchema();
+			}
+		} finally {
+			args.adminClient?.release();
+			await args.adminPool.end();
+		}
+	}
 }
 
 function withSearchPath(url: string, schema: string): string {

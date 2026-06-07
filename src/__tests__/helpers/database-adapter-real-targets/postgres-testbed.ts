@@ -65,6 +65,34 @@ export function quotePostgresIdentifier(input: string): string {
 	return `"${input.replace(/"/g, '""')}"`;
 }
 
+export async function cleanupAfterCreateFailure(
+	originalError: unknown,
+	cleanup: () => Promise<void>,
+): Promise<never> {
+	try {
+		await cleanup();
+	} catch (cleanupError) {
+		attachCleanupError(originalError, cleanupError);
+	}
+	throw originalError;
+}
+
+function attachCleanupError(
+	originalError: unknown,
+	cleanupError: unknown,
+): void {
+	if (
+		originalError &&
+		(typeof originalError === "object" || typeof originalError === "function")
+	) {
+		Object.defineProperty(originalError, "cleanupError", {
+			configurable: true,
+			enumerable: false,
+			value: cleanupError,
+		});
+	}
+}
+
 function buildCreateSchemaSql(schemaRef: string): string {
 	return "CREATE SCHEMA IF NOT EXISTS " + schemaRef;
 }

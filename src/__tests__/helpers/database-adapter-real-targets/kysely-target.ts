@@ -10,6 +10,7 @@ import {
 import type { RealDbConformanceTarget, RealDbTargetContext } from "./target.js";
 import { createRealDbConformanceHelpers } from "./target.js";
 import {
+	cleanupAfterCreateFailure,
 	createSchemaName,
 	createPostgresTestbed,
 	quotePostgresIdentifier,
@@ -73,43 +74,61 @@ export function createKyselyRealConformanceTarget(
 			const adminPool = new Pool({
 				connectionString: depoolNeonUrl(options.url),
 			});
-			const adminClient = await adminPool.connect();
-			const executor = new PgSqlExecutor(adminClient);
-			const testbed = createPostgresTestbed({
-				executor,
-				schema,
-				schemaSql: HERALD_SCHEMA_SQL,
-				tables: [...HERALD_TABLES],
-			});
-			await testbed.createSchema();
-			await testbed.applySchemaFixture();
-			await testbed.assertSearchPath();
-			await testbed.truncateTables();
+			let adminClient: PoolClient | null = null;
+			let testbed: ReturnType<typeof createPostgresTestbed> | null = null;
+			let pool: Pool | null = null;
+			let kysely: Kysely<HeraldDatabase> | null = null;
 
-			const users = createUserEmailStore();
+			try {
+				adminClient = await adminPool.connect();
+				const executor = new PgSqlExecutor(adminClient);
+				testbed = createPostgresTestbed({
+					executor,
+					schema,
+					schemaSql: HERALD_SCHEMA_SQL,
+					tables: [...HERALD_TABLES],
+				});
+				await testbed.createSchema();
+				await testbed.applySchemaFixture();
+				await testbed.assertSearchPath();
+				await testbed.truncateTables();
 
-			const pool = new Pool({
-				connectionString: withSearchPath(depoolNeonUrl(options.url), schema),
-				max: 1,
-			});
+				const users = createUserEmailStore();
 
-			const kysely = new Kysely<HeraldDatabase>({
-				dialect: new PostgresDialect({ pool }),
-			});
-			const adapter = createKyselyAdapter(kysely, {
-				getUserEmail: (userId) => users.getUserEmail(userId),
-			});
+				pool = new Pool({
+					connectionString: withSearchPath(depoolNeonUrl(options.url), schema),
+					max: 1,
+				});
 
-			const context = {
-				schema,
-				executor,
-				users,
-				pool,
-				kysely,
-				adminPool,
-				adminClient,
-			};
-			return { adapter, context };
+				kysely = new Kysely<HeraldDatabase>({
+					dialect: new PostgresDialect({ pool }),
+				});
+				const adapter = createKyselyAdapter(kysely, {
+					getUserEmail: (userId) => users.getUserEmail(userId),
+				});
+
+				const context = {
+					schema,
+					executor,
+					users,
+					pool,
+					kysely,
+					adminPool,
+					adminClient,
+				};
+				return { adapter, context };
+			} catch (error) {
+				return cleanupAfterCreateFailure(error, () =>
+					cleanupKyselyCreateFailure({
+						adminPool,
+						adminClient,
+						keepSchema: options.keepSchema,
+						kysely,
+						pool,
+						testbed,
+					}),
+				);
+			}
 		},
 		async reset(context) {
 			const testbed = createPostgresTestbed({
@@ -140,6 +159,32 @@ export function createKyselyRealConformanceTarget(
 		},
 		helpers: createRealDbConformanceHelpers(schema),
 	};
+}
+
+async function cleanupKyselyCreateFailure(args: {
+	adminPool: Pool;
+	adminClient: PoolClient | null;
+	keepSchema?: boolean;
+	kysely: Kysely<HeraldDatabase> | null;
+	pool: Pool | null;
+	testbed: ReturnType<typeof createPostgresTestbed> | null;
+}): Promise<void> {
+	try {
+		if (args.kysely) {
+			await args.kysely.destroy();
+		} else {
+			await args.pool?.end();
+		}
+	} finally {
+		try {
+			if (!args.keepSchema && args.testbed) {
+				await args.testbed.dropSchema();
+			}
+		} finally {
+			args.adminClient?.release();
+			await args.adminPool.end();
+		}
+	}
 }
 
 function withSearchPath(url: string, schema: string): string {

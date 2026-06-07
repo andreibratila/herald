@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	cleanupAfterCreateFailure,
 	createPostgresTestbed,
 	createSchemaName,
 	quotePostgresIdentifier,
@@ -48,5 +49,28 @@ describe("postgres testbed", () => {
 			'TRUNCATE TABLE "herald_conformance_test"."herald_notifications", "herald_conformance_test"."herald_deliveries" RESTART IDENTITY CASCADE',
 			'DROP SCHEMA IF EXISTS "herald_conformance_test" CASCADE',
 		]);
+	});
+
+	it("preserves the original create error when cleanup succeeds", async () => {
+		const originalError = new Error("create failed");
+
+		await expect(
+			cleanupAfterCreateFailure(originalError, async () => {}),
+		).rejects.toBe(originalError);
+	});
+
+	it("preserves the original create error when cleanup also fails", async () => {
+		const originalError = new Error("create failed");
+		const cleanupError = new Error("cleanup failed");
+
+		await expect(
+			cleanupAfterCreateFailure(originalError, async () => {
+				throw cleanupError;
+			}),
+		).rejects.toBe(originalError);
+		expect((originalError as { cleanupError?: unknown }).cleanupError).toBe(
+			cleanupError,
+		);
+		expect(Object.keys(originalError)).not.toContain("cleanupError");
 	});
 });

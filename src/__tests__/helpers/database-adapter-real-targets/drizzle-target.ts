@@ -7,6 +7,7 @@ import { createDrizzleAdapter } from "../../../adapters/db/drizzle.js";
 import type { RealDbConformanceTarget, RealDbTargetContext } from "./target.js";
 import { createRealDbConformanceHelpers } from "./target.js";
 import {
+	cleanupAfterCreateFailure,
 	createPostgresTestbed,
 	createSchemaName,
 	quotePostgresIdentifier,
@@ -70,33 +71,49 @@ export function createDrizzleRealConformanceTarget(
 			const adminPool = new Pool({
 				connectionString: depoolNeonUrl(options.url),
 			});
-			const adminClient = await adminPool.connect();
-			const executor = new PgSqlExecutor(adminClient);
-			const testbed = createPostgresTestbed({
-				executor,
-				schema,
-				schemaSql: HERALD_SCHEMA_SQL,
-				tables: [...HERALD_TABLES],
-			});
-			await testbed.createSchema();
-			await testbed.applySchemaFixture();
-			await testbed.assertSearchPath();
-			await testbed.truncateTables();
+			let adminClient: PoolClient | null = null;
+			let testbed: ReturnType<typeof createPostgresTestbed> | null = null;
+			let pool: Pool | null = null;
 
-			const users = createUserEmailStore();
-			const pool = new Pool({
-				connectionString: withSearchPath(depoolNeonUrl(options.url), schema),
-				max: 1,
-			});
-			const db = drizzle(pool);
-			const adapter = createDrizzleAdapter(db, drizzleHeraldTables, {
-				getUserEmail: (userId) => users.getUserEmail(userId),
-			});
+			try {
+				adminClient = await adminPool.connect();
+				const executor = new PgSqlExecutor(adminClient);
+				testbed = createPostgresTestbed({
+					executor,
+					schema,
+					schemaSql: HERALD_SCHEMA_SQL,
+					tables: [...HERALD_TABLES],
+				});
+				await testbed.createSchema();
+				await testbed.applySchemaFixture();
+				await testbed.assertSearchPath();
+				await testbed.truncateTables();
 
-			return {
-				adapter,
-				context: { schema, executor, users, adminPool, adminClient, pool },
-			};
+				const users = createUserEmailStore();
+				pool = new Pool({
+					connectionString: withSearchPath(depoolNeonUrl(options.url), schema),
+					max: 1,
+				});
+				const db = drizzle(pool);
+				const adapter = createDrizzleAdapter(db, drizzleHeraldTables, {
+					getUserEmail: (userId) => users.getUserEmail(userId),
+				});
+
+				return {
+					adapter,
+					context: { schema, executor, users, adminPool, adminClient, pool },
+				};
+			} catch (error) {
+				return cleanupAfterCreateFailure(error, () =>
+					cleanupDrizzleCreateFailure({
+						adminPool,
+						adminClient,
+						keepSchema: options.keepSchema,
+						pool,
+						testbed,
+					}),
+				);
+			}
 		},
 		async reset(context) {
 			const testbed = createPostgresTestbed({
@@ -127,6 +144,27 @@ export function createDrizzleRealConformanceTarget(
 		},
 		helpers: createRealDbConformanceHelpers(schema),
 	};
+}
+
+async function cleanupDrizzleCreateFailure(args: {
+	adminPool: Pool;
+	adminClient: PoolClient | null;
+	keepSchema?: boolean;
+	pool: Pool | null;
+	testbed: ReturnType<typeof createPostgresTestbed> | null;
+}): Promise<void> {
+	try {
+		await args.pool?.end();
+	} finally {
+		try {
+			if (!args.keepSchema && args.testbed) {
+				await args.testbed.dropSchema();
+			}
+		} finally {
+			args.adminClient?.release();
+			await args.adminPool.end();
+		}
+	}
 }
 
 function withSearchPath(url: string, schema: string): string {
