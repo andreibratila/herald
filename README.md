@@ -447,6 +447,12 @@ Herald does not include a real-time transport. Choose what fits your stack. Copy
 
 ---
 
+## Contributor testing
+
+The default test suite runs without external services. Maintainers can opt into live PostgreSQL adapter checks with the [real DB conformance guide](./docs/real-db-conformance.md).
+
+---
+
 ## License
 
 MIT AND Commons-Clause
