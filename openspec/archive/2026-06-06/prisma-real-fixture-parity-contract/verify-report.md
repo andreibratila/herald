@@ -10,7 +10,7 @@ The Prisma 7 schema text/snippet work, Prisma real fixture parity work, and Pris
 
 - `3bb289b test: validate prisma schema snippet`
 - `776a56f test: validate prisma real fixture parity`
-- `586c2b1 test: migrate prisma real target to adapter`
+- `fb8e862 test: migrate prisma real target to adapter`
 
 ## Scope Verified
 

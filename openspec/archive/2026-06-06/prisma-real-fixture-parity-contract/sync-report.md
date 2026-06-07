@@ -22,21 +22,21 @@ The canonical fixture parity requirement now includes the Prisma real fixture te
 - `src/__tests__/helpers/database-adapter-real-targets/drizzle-schema.ts`
 - `src/__tests__/helpers/database-adapter-real-targets/prisma-schema.template`
 
-The spec now records that Prisma fixture validation uses narrow fixture-style parsing for:
+The spec now records that Prisma structural parity validation uses narrow fixture-style parsing for:
 
 - model blocks;
 - field `@map` column names;
 - model `@@map` table names;
 - mapped `@@index` declarations;
-- simple equality partial-index predicates;
-- datasource `schemas`;
-- model `@@schema` declarations.
+- simple equality partial-index predicates.
 
 It also records the Prisma >=7.4 template contract:
 
 - `previewFeatures = ["partialIndexes"]`;
 - no schema-file datasource `url`;
 - explicit schema placeholders for real-target generation;
+- datasource `schemas`;
+- model `@@schema` declarations;
 - delivery `updatedAt` uses `@updatedAt`;
 - `@db.Timestamptz(6)` remains accepted for the real target.
 
@@ -56,7 +56,7 @@ The spec now records:
 
 Verification report:
 
-- `openspec/changes/prisma-real-fixture-parity-contract/verify-report.md`
+- `openspec/archive/2026-06-06/prisma-real-fixture-parity-contract/verify-report.md`
 
 Implementation commits:
 
