@@ -16,28 +16,27 @@ The conformance suite **MUST** provide a reusable harness that accepts an adapte
 ### Requirement: Real DB Fixture Structural Parity
 Real database conformance fixtures **MUST** be validated against the authoritative Herald database schema metadata in `HERALD_DB_SCHEMA` without requiring a live database, Docker, migration execution, Prisma generation, Drizzle migration execution, Herald CLI invocation, or generated fixture output.
 
-The first-slice parity contract covers these real fixtures:
+The fixture parity contract covers these real fixtures:
 
 - `src/__tests__/helpers/database-adapter-real-targets/herald-schema.sql`
 - `src/__tests__/helpers/database-adapter-real-targets/drizzle-schema.ts`
-
-The Prisma fixture template is intentionally deferred from this requirement:
-
 - `src/__tests__/helpers/database-adapter-real-targets/prisma-schema.template`
 
 Structural parity **MUST** compare schema meaning rather than renderer text equality. The validation **MUST** detect missing or extra Herald tables, missing or extra columns by table, missing or extra metadata-declared indexes, incorrect table/index association, incorrect index field order, and incorrect simple equality partial-index predicates. Primary keys **MUST NOT** be treated as extra indexes unless `HERALD_DB_SCHEMA` declares them as indexes.
 
 Failure diagnostics **MUST** identify the fixture path, affected table/column/index/predicate, expected metadata-derived value, and actual fixture-derived value.
 
-Column type parity, primary-key parity, nullability parity, default-value parity, Prisma template parity, fixture generation, CLI output parity, and global PostgreSQL fidelity are deferred from this requirement. The first-slice validation **MUST NOT** fail solely because metadata logical `json` is represented as SQL `JSONB` / Drizzle `jsonb()` or metadata logical `timestamp` is represented as SQL `TIMESTAMPTZ` / the existing Drizzle timezone timestamp helper.
+Column type parity, primary-key parity, nullability parity, default-value parity beyond explicit Prisma `updatedAt`, fixture generation, CLI output parity, and global PostgreSQL fidelity are deferred from this requirement. The validation **MUST NOT** fail solely because metadata logical `json` is represented as SQL `JSONB` / Drizzle `jsonb()` / Prisma `Json` or metadata logical `timestamp` is represented as SQL `TIMESTAMPTZ` / the existing Drizzle timezone timestamp helper / Prisma `@db.Timestamptz(6)`.
 
 Drizzle validation **MUST** use narrow source scanning constrained to the current real fixture declaration style, including ``pgTable(..., columns, (t) => [index(...).on(...).where(sql`...`)])``. It **MUST NOT** require full TypeScript AST analysis, arbitrary TypeScript evaluation, runtime Drizzle metadata introspection, or a live database in this slice.
 
+Prisma validation **MUST** use narrow source scanning constrained to the current real fixture template style. It **MUST** parse model blocks, field `@map` column names, model `@@map` table names, mapped `@@index` declarations, simple equality partial-index predicates, datasource `schemas`, and model `@@schema` declarations. The template **MUST** remain valid for Prisma >=7.4 with `previewFeatures = ["partialIndexes"]`, no schema-file datasource `url`, and explicit schema placeholders for real-target generation. Prisma delivery `updatedAt` **MUST** use `@updatedAt`.
+
 Partial-index predicate normalization **MUST** be limited to simple equality predicates matching metadata shape `{ field, equals }`, such as metadata `status == scheduled`, SQL `WHERE status = 'scheduled'`, and Drizzle ``.where(sql`status = 'scheduled'`)``. General SQL predicate parsing is deferred.
 
-#### Scenario: SQL and Drizzle real fixtures match authoritative schema metadata structurally
+#### Scenario: SQL, Drizzle, and Prisma real fixtures match authoritative schema metadata structurally
 - **Given** `HERALD_DB_SCHEMA` defines authoritative Herald database tables, columns, indexes, index field order, and simple equality partial-index predicates
-- **And** the SQL and Drizzle real DB fixtures define schema objects for real database conformance tests
+- **And** the SQL, Drizzle, and Prisma real DB fixtures define schema objects for real database conformance tests
 - **When** DB-free fixture parity validation runs for those fixtures
 - **Then** every metadata table covered by each fixture exists in that fixture
 - **And** no fixture defines extra Herald tables outside the authoritative metadata
@@ -58,11 +57,23 @@ Partial-index predicate normalization **MUST** be limited to simple equality pre
 - **And** the fixture must be updated to use `herald_delivery_status_claim_expires_idx`
 
 #### Scenario: Deferred fixture parity dimensions are not treated as failures
-- **Given** primary-key parity, nullability parity, default-value parity, complete logical type parity, Prisma template parity, fixture generation, CLI output parity, and global PostgreSQL fidelity requirements are outside the first-slice scope
-- **When** the first-slice parity validation runs
+- **Given** primary-key parity, nullability parity, default-value parity beyond explicit Prisma `updatedAt`, complete logical type parity, fixture generation, CLI output parity, and global PostgreSQL fidelity requirements are outside this scope
+- **When** fixture parity validation runs
 - **Then** those deferred dimensions are not required for a passing result
 - **And** failures are limited to the structural parity dimensions explicitly covered by this requirement
-- **And** future changes may add separate requirements for deferred dimensions without redefining this first-slice contract
+- **And** future changes may add separate requirements for deferred dimensions without redefining this contract
+
+### Requirement: Prisma Real Target Schema Isolation
+The Prisma real database conformance target **MUST** generate a Prisma Client that isolates ORM model queries to the per-test PostgreSQL schema and **MUST** keep raw SQL paths isolated to the same schema.
+
+#### Scenario: Prisma real target uses explicit Prisma schema metadata and search path
+- **Given** the Prisma real conformance target creates an isolated PostgreSQL schema for a test run
+- **When** it generates the Prisma Client from the real fixture template
+- **Then** the generated Prisma schema includes datasource `schemas` for that isolated schema
+- **And** each Herald model uses `@@schema` for that isolated schema
+- **And** the runtime Prisma Client is constructed with the `@prisma/adapter-pg` driver adapter rather than Prisma datasource URL overrides
+- **And** the connection string sets `search_path` for raw SQL query paths
+- **And** ORM model queries and raw SQL queries operate against the same isolated schema
 
 ### Requirement: Notification Operations Semantics
 Database adapters **MUST** support notification create/list/get/count/mark-read semantics with deterministic pagination and ordering.

@@ -158,10 +158,12 @@ async function loadGeneratedPrismaClient(schema: string): Promise<{
 			const schemaPath = join(__dirname, "prisma-schema.generated.prisma");
 			const generatedSchema = PRISMA_SCHEMA_TEMPLATE.split(
 				"__DATABASE_SCHEMA__",
-			).join(schema).replace(
-				"__PRISMA_CLIENT_OUTPUT__",
-				PRISMA_CLIENT_OUTPUT.replace(/\\/g, "\\\\"),
-			);
+			)
+				.join(schema)
+				.replace(
+					"__PRISMA_CLIENT_OUTPUT__",
+					PRISMA_CLIENT_OUTPUT.replace(/\\/g, "\\\\"),
+				);
 			await writeFile(schemaPath, generatedSchema, "utf8");
 
 			try {
